@@ -100,8 +100,7 @@ col_m1, col_m2, col_m3, col_m4 = st.columns(4)
 col_m1.metric("Ingresos del mes", f"{curr_inc:.2f} €")
 col_m2.metric("Gastos del mes", f"{curr_exp:.2f} €")
 col_m3.metric("Valor Neto del mes", f"{curr_net:.2f} €", delta=f"{curr_net:.2f} €" if curr_net != 0 else None)
-col_m4.metric("Saldo del mes", f"{curr_balance:.2f} €")
-
+col4.metric("Saldo Total", f"{saldo_total:.2f} €")
 st.divider()
 
 # --- 2. REGISTRO Y TABLA DE HISTORIAL ---
