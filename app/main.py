@@ -4,14 +4,10 @@ from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException
 from sqlmodel import SQLModel, Field, Session, create_engine, select
 
-# --- RUTA ABSOLUTA DE BASE DE DATOS ---
-BASE_DIR = Path(__file__).resolve().parent
-sqlite_file_name = BASE_DIR / "database.db"
-sqlite_url = f"sqlite:///{sqlite_file_name}"
-
+# --- CONEXIÓN A BASE DE DATOS EN LA NUBE (SUPABASE) ---
+sqlite_url = "postgresql://postgres.wuorftaoixtanodllrxu:70K0zi5JJiEQwJFv@aws-1-eu-west-1.pooler.supabase.com:5432/postgres"
 connect_args = {"check_same_thread": False}
-engine = create_engine(sqlite_url, echo=False, connect_args=connect_args)
-
+engine = create_engine(sqlite_url)
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
