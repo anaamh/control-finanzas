@@ -5,8 +5,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import date, datetime, time
 
-API_URL = "http://127.0.0.1:8000"
-
+API_URL = "https://control-finanzas-api-eoqj.onrender.com"
 st.set_page_config(page_title="Control de Finanzas", layout="wide")
 
 MESES_ES = {
@@ -50,14 +49,14 @@ transactions_data = []
 categories_data = []
 
 try:
-    c_res = requests.get(f"{API_URL}/categories/", timeout=2).json()
+    c_res = requests.get(f"{API_URL}/categories/", timeout=60).json()
     if isinstance(c_res, list):
         categories_data = c_res
 except Exception:
     pass
 
 try:
-    t_res = requests.get(f"{API_URL}/transactions/", timeout=2).json()
+    t_res = requests.get(f"{API_URL}/transactions/", timeout=602).json()
     if isinstance(t_res, list):
         transactions_data = t_res
 except Exception:
@@ -140,7 +139,7 @@ with col_form:
                 if matched_id:
                     cat_id = matched_id
                 else:
-                    res_c = requests.post(f"{API_URL}/categories/", json={"name": clean_cat_name, "type": selected_type_str}, timeout=2)
+                    res_c = requests.post(f"{API_URL}/categories/", json={"name": clean_cat_name, "type": selected_type_str}, timeout=60)
                     cat_id = res_c.json()["id"] if res_c.status_code == 200 else None
 
                 if cat_id:
@@ -151,7 +150,7 @@ with col_form:
                         "category_id": cat_id,
                         "date": full_datetime.isoformat()
                     }
-                    res_tx = requests.post(f"{API_URL}/transactions/", json=payload, timeout=2)
+                    res_tx = requests.post(f"{API_URL}/transactions/", json=payload, timeout=60)
                     if res_tx.status_code == 200:
                         st.success("¡Movimiento guardado con éxito!")
                         st.rerun()
