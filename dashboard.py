@@ -56,7 +56,7 @@ except Exception:
     pass
 
 try:
-    t_res = requests.get(f"{API_URL}/transactions/", timeout=602).json()
+    t_res = requests.get(f"{API_URL}/transactions/", timeout=60).json()
     if isinstance(t_res, list):
         transactions_data = t_res
 except Exception:
@@ -88,19 +88,18 @@ if not df.empty:
     curr_exp = df_curr[df_curr["category_type"] == "gasto"]["amount"].sum()
     curr_net = curr_inc - curr_exp
     
-    # Saldo acumulado hasta el mes actual
-    df_upto_curr = df[df["period"] <= current_period]
-    total_inc_upto = df_upto_curr[df_upto_curr["category_type"] == "ingreso"]["amount"].sum()
-    total_exp_upto = df_upto_curr[df_upto_curr["category_type"] == "gasto"]["amount"].sum()
-    curr_balance = total_inc_upto - total_exp_upto
+    # Saldo histórico total (acumulado global sin filtro de mes)
+    total_inc_all = df[df["category_type"] == "ingreso"]["amount"].sum()
+    total_exp_all = df[df["category_type"] == "gasto"]["amount"].sum()
+    saldo_total = total_inc_all - total_exp_all
 else:
-    curr_inc, curr_exp, curr_net, curr_balance = 0.0, 0.0, 0.0, 0.0
+    curr_inc, curr_exp, curr_net, saldo_total = 0.0, 0.0, 0.0, 0.0
 
 col_m1, col_m2, col_m3, col_m4 = st.columns(4)
 col_m1.metric("Ingresos del mes", f"{curr_inc:.2f} €")
 col_m2.metric("Gastos del mes", f"{curr_exp:.2f} €")
 col_m3.metric("Valor Neto del mes", f"{curr_net:.2f} €", delta=f"{curr_net:.2f} €" if curr_net != 0 else None)
-col4.metric("Saldo Total", f"{saldo_total:.2f} €")
+col_m4.metric("Saldo Total", f"{saldo_total:.2f} €")
 st.divider()
 
 # --- 2. REGISTRO Y TABLA DE HISTORIAL ---
@@ -334,7 +333,6 @@ with st.expander("🌐 Histórico Global y Totales de la App", expanded=False):
         
         st.markdown("##### 📈 Evolución Histórica")
         
-        # Selector de vista para el gráfico histórico
         cat_options = ["🌐 Todas las categorías (Visión General)"] + sorted(df["category_name"].unique().tolist())
         selected_hist_cat = st.selectbox("Filtrar gráfico histórico por:", cat_options)
         
@@ -370,8 +368,8 @@ with st.expander("🌐 Histórico Global y Totales de la App", expanded=False):
 
             fig_bar.update_layout(
                 barmode="group",
-                bargap=0.4,          # Espacio para reducir el ancho excesivo si hay pocos meses
-                bargroupgap=0.15,    # Espacio entre Ingresos y Gastos del mismo mes
+                bargap=0.4,
+                bargroupgap=0.15,
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
                 font=dict(family="Poppins, sans-serif", size=12, color="#334155"),
@@ -383,7 +381,6 @@ with st.expander("🌐 Histórico Global y Totales de la App", expanded=False):
             )
             st.plotly_chart(fig_bar, use_container_width=True)
         else:
-            # Vista filtrada por una categoría específica
             df_cat_hist = df[df["category_name"] == selected_hist_cat].copy()
             cat_type = df_cat_hist["category_type"].iloc[0] if not df_cat_hist.empty else "gasto"
             
