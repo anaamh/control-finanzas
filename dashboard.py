@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import requests
 import pandas as pd
 import plotly.express as px
@@ -6,24 +7,26 @@ import plotly.graph_objects as go
 from datetime import date, datetime, time
 import base64
 
-# --- CONFIGURACIÓN DE PÁGINA (Debe ser la primera instrucción de Streamlit) ---
+# --- CONFIGURACIÓN DE PÁGINA (Debe ser la primera instrucción) ---
 st.set_page_config(
     page_title="Finanzas", 
     page_icon="logo.png", 
     layout="wide"
 )
 
-# --- INYECTAR ICONO EN BASE64 PARA IPHONE / IOS (APPLE-TOUCH-ICON) ---
+# --- INYECCIÓN EN EL HEAD DE SAFARI PARA IPHONE (APPLE-TOUCH-ICON) ---
 try:
     with open("logo.png", "rb") as image_file:
         encoded_logo = base64.b64encode(image_file.read()).decode()
     
-    st.markdown(
-        f'''
-        <link rel="apple-touch-icon" href="data:image/png;base64,{encoded_logo}">
-        ''',
-        unsafe_allow_html=True
-    )
+    components.html(f"""
+        <script>
+            var link = parent.document.createElement('link');
+            link.rel = 'apple-touch-icon';
+            link.href = 'data:image/png;base64,{encoded_logo}';
+            parent.document.getElementsByTagName('head')[0].appendChild(link);
+        </script>
+    """, height=0)
 except Exception:
     pass
 
@@ -41,7 +44,7 @@ MESES_ES = {
 }
 
 DEFAULT_EMOJIS = {
-    "saldo": "💰", "familia": "🫀", "lee": "🔬", "cultura": "🎟️", "artes": "🎟️",
+    "saldo": "🪎", "familia": "🫀", "lee": "🔬", "cultura": "🎟️", "artes": "🎟️",
     "comida": "🥘", "uji": "🎓", "amigos": "🎁", "restaurante": "🥘", "supermercado": "🛒",
     "compras": "🛍️", "transporte": "🚗", "gasolina": "⛽", "casa": "🏠", "hogar": "🏠",
     "alquiler": "🔑", "ocio": "🎉", "entretenimiento": "🎬", "salud": "🏥", "farmacia": "💊",
@@ -422,7 +425,6 @@ with col_form:
 with col_data:
     tab_tabla, tab_grafico = st.tabs(["🔔 Actividad del Mes", "🍩 Distribución del Mes por Categorías"])
     
-    # FILTRO ÚNICAMENTE PARA EL MES ACTUAL (df_curr)
     if not df_curr.empty:
         if "id" in df_curr.columns:
             df_table = df_curr.sort_values(by=["date_parsed", "id"], ascending=[False, False]).reset_index(drop=True)
@@ -531,7 +533,6 @@ with col_data:
                     key="pie_filter_type"
                 )
 
-            # ROSCO SOLO DEL MES ACTUAL
             if tipo_grafico == "Solo Gastos":
                 df_pie = df_curr[df_curr["category_type"] == "gasto"]
             elif tipo_grafico == "Solo Ingresos":
