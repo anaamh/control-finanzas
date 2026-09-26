@@ -2,6 +2,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel, Field, Session, create_engine, select
 
 # --- CONEXIÓN A BASE DE DATOS EN LA NUBE (SUPABASE) ---
@@ -49,6 +50,15 @@ class TransactionCreate(SQLModel):
 # --- APLICACIÓN FASTAPI ---
 app = FastAPI(title="Control de Finanzas API")
 
+# --- PERMISOS CORS PARA PERMITIR CONEXIÓN DESDE EL NAVEGADOR / HTML ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 @app.on_event("startup")
 def on_startup():
@@ -58,7 +68,6 @@ def on_startup():
 # --- ENDPOINTS DE CATEGORÍAS ---
 @app.post("/categories/", response_model=Category)
 def create_category(category: CategoryCreate, session: Session = Depends(get_session)):
-    # Si la categoría ya existe (sin importar mayúsculas/minúsculas), la reutiliza
     existing = session.exec(select(Category).where(Category.name.ilike(category.name.strip()))).first()
     if existing:
         return existing
@@ -108,7 +117,6 @@ def get_balance_summary(session: Session = Depends(get_session)):
     total_expense = 0.0
     
     for tx, cat in transactions:
-        # El balance depende de si la transacción se registró como ingreso o gasto en el formulario
         if cat.type.lower() == "ingreso":
             total_income += tx.amount
         elif cat.type.lower() == "gasto":
