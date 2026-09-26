@@ -8,11 +8,65 @@ from datetime import date, datetime, time
 API_URL = "https://control-finanzas-api-eoqj.onrender.com"
 st.set_page_config(page_title="Control de Finanzas", layout="wide")
 
+PLOTLY_CONFIG = {
+    'displayModeBar': False,
+    'scrollZoom': False
+}
+
 MESES_ES = {
     1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril",
     5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto",
     9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"
 }
+
+DEFAULT_EMOJIS = {
+    "saldo": "🪎", "familia": "🫀", "lee": "🔬", "cultura": "🎟️", "artes": "🎟️",
+    "comida": "🥘", "uji": "🎓", "amigos": "🎁", "restaurante": "🥘", "supermercado": "🛒",
+    "compras": "🛍️", "transporte": "🚗", "gasolina": "⛽", "casa": "🏠", "hogar": "🏠",
+    "alquiler": "🔑", "ocio": "🎉", "entretenimiento": "🎬", "salud": "🏥", "farmacia": "💊",
+    "inversiones": "📈", "sueldo": "💰", "salario": "💰", "ingresos": "💵", "regalos": "🎁",
+    "viajes": "✈️", "educacion": "📚", "mascotas": "🐾", "servicios": "💡"
+}
+
+def extract_emoji(cat_name):
+    if not cat_name:
+        return "🏷️"
+    
+    for char in str(cat_name):
+        code = ord(char)
+        if (0x1F600 <= code <= 0x1F64F or
+            0x1F300 <= code <= 0x1F5FF or
+            0x1F680 <= code <= 0x1F6FF or
+            0x1F1E0 <= code <= 0x1F1FF or
+            0x2600 <= code <= 0x26FF or
+            0x2700 <= code <= 0x27BF or
+            0x1F900 <= code <= 0x1F9FF or
+            0x1FA70 <= code <= 0x1FAFF or
+            code > 0x2000):
+            return char
+            
+    name_lower = str(cat_name).lower().strip()
+    for key, emo in DEFAULT_EMOJIS.items():
+        if key == name_lower:
+            return emo
+            
+    for key, emo in DEFAULT_EMOJIS.items():
+        if key in name_lower:
+            return emo
+            
+    return "🏷️"
+
+def get_full_cat_label(cat_name):
+    if not cat_name:
+        return "🏷️ Sin Categoría"
+    cat_str = str(cat_name).strip()
+    first_char = cat_str[0] if cat_str else ""
+    
+    if first_char and (ord(first_char) > 0x2000 or 0x1F300 <= ord(first_char) <= 0x1FAFF):
+        return cat_str
+        
+    emoji = extract_emoji(cat_str)
+    return f"{emoji} {cat_str}"
 
 def format_period_es(period_str):
     try:
@@ -21,12 +75,10 @@ def format_period_es(period_str):
     except Exception:
         return period_str
 
-# --- ESTILOS CSS PERSONALIZADOS ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;600;700&family=Quicksand:wght@500;600;700&display=swap');
     
-    /* Configuración global del color primario (reemplaza el rojo/naranja nativo) */
     :root, .stApp {
         --primary-color: #F2ACC6 !important;
     }
@@ -40,7 +92,6 @@ st.markdown("""
         color: #FFFFFF !important;
     }
 
-    /* TÍTULOS EN ROSA #F2ACC6 */
     h1, h2, h3 {
         color: #F2ACC6 !important;
         font-weight: 700 !important;
@@ -51,101 +102,122 @@ st.markdown("""
         font-weight: 600 !important;
     }
 
-    /* --- LEGIBILIDAD EN MÉTRICAS --- */
-    [data-testid="stMetricValue"],
-    [data-testid="stMetricValue"] *,
-    div[data-testid="stMetricValue"] > div {
+    [data-testid="stMetricValue"], [data-testid="stMetricValue"] * {
         color: #FFFFFF !important;
         font-weight: 700 !important;
     }
 
-    [data-testid="stMetricLabel"],
-    [data-testid="stMetricLabel"] *,
-    [data-testid="stMetricLabel"] p {
+    [data-testid="stMetricLabel"], [data-testid="stMetricLabel"] * {
         color: #A8DADC !important;
         font-weight: 700 !important;
     }
 
-    /* --- ETIQUETAS Y TEXTOS DE FORMULARIOS --- */
-    label, 
-    [data-testid="stWidgetLabel"], 
-    [data-testid="stWidgetLabel"] p,
-    div[data-testid="stRadio"] label,
-    div[data-testid="stRadio"] label p,
-    div[data-baseweb="radio"] label {
+    label, [data-testid="stWidgetLabel"], [data-testid="stWidgetLabel"] p {
         color: #A8DADC !important;
         font-weight: 700 !important;
-        font-size: 0.95rem !important;
     }
 
     div[role="radiogroup"] label p {
         color: #FFFFFF !important;
     }
 
-    /* --- BOTONES DE RADIO SELECCIONADOS --- */
-    div[data-baseweb="radio"] [aria-checked="true"] {
-        background-color: #F2ACC6 !important;
-        border-color: #F2ACC6 !important;
-    }
-
-    div[data-baseweb="radio"] div {
-        border-color: #F2ACC6 !important;
-    }
-
-    /* --- ENTRADAS DE TEXTO / INPUTS --- */
-    div[data-baseweb="input"], 
-    div[data-baseweb="base-input"],
+    div[data-baseweb="input"],
     div[data-baseweb="select"] > div {
-        background-color: #07191B !important;
-        border: 1.5px solid #1F4E53 !important;
-        border-radius: 16px !important;
-        overflow: hidden !important;
+        background-color: #103338 !important;
+        border: 2px solid #2D6A70 !important;
+        border-radius: 12px !important;
+        color: #FFFFFF !important;
     }
 
-    div[data-baseweb="input"] input,
-    div[data-baseweb="base-input"] input {
-        background-color: transparent !important;
+    div[data-testid="stTextInput"] > div > div,
+    div[data-testid="stNumberInput"] > div > div,
+    div[data-testid="stDateInput"] > div > div,
+    div[data-testid="stSelectbox"] > div > div {
+        background-color: #103338 !important;
+        border: 2px solid #2D6A70 !important;
+        border-radius: 12px !important;
+    }
+
+    div[data-baseweb="select"] svg {
+        fill: #A8DADC !important;
+    }
+
+    ul[data-baseweb="menu"] {
+        background-color: #103338 !important;
+        border: 1px solid #2D6A70 !important;
+        border-radius: 12px !important;
+    }
+
+    li[data-baseweb="option"] {
         color: #FFFFFF !important;
-        border: none !important;
-        font-weight: 600 !important;
+    }
+
+    li[data-baseweb="option"]:hover,
+    li[data-baseweb="option"][aria-selected="true"] {
+        background-color: #1A464C !important;
+        color: #F2ACC6 !important;
+    }
+
+    div[data-baseweb="input"] input {
+        color: #FFFFFF !important;
+        background-color: transparent !important;
     }
 
     input::placeholder {
         color: #8ECAE6 !important;
-        opacity: 0.6 !important;
+        opacity: 0.7 !important;
     }
 
-    div[data-baseweb="input"] button {
-        background-color: #14373B !important;
+    div[data-baseweb="input"] button, 
+    [data-testid="stNumberInputStepDown"], 
+    [data-testid="stNumberInputStepUp"] {
+        background-color: #1A464C !important;
         color: #F2ACC6 !important;
         border: none !important;
     }
 
-    div[data-baseweb="input"] button:hover {
+    .stButton > button, [data-testid="stFormSubmitButton"] > button {
         background-color: #F2ACC6 !important;
+        color: #0B2528 !important;
+        border-radius: 30px !important;
+        border: none !important;
+        font-weight: 600 !important;
+        white-space: nowrap !important;
+        padding: 8px 20px !important;
+    }
+
+    .stButton > button:hover, [data-testid="stFormSubmitButton"] > button:hover {
+        background-color: #8ECAE6 !important;
         color: #0B2528 !important;
     }
 
-    /* --- PESTAÑAS (TABS) --- */
-    button[data-baseweb="tab"] p {
-        color: #A8DADC !important;
-        font-weight: 600 !important;
+    div[data-testid="stFormSubmitButton"] {
+        display: flex !important;
+        justify-content: center !important;
+        width: 100% !important;
     }
 
-    button[aria-selected="true"] p {
+    div[data-testid="stRadio"] [aria-checked="true"] *,
+    div[data-baseweb="radio"] [aria-checked="true"] * {
+        background-color: #F2ACC6 !important;
+        border-color: #F2ACC6 !important;
+    }
+
+    [data-testid="stTabs"] button[aria-selected="true"] *,
+    button[data-baseweb="tab"][aria-selected="true"] * {
         color: #F2ACC6 !important;
         font-weight: 700 !important;
     }
 
+    [data-testid="stTabs"] [data-baseweb="tab-highlight"],
     div[data-baseweb="tab-highlight"] {
         background-color: #F2ACC6 !important;
     }
 
-    button[aria-selected="true"] {
-        border-bottom: 3px solid #F2ACC6 !important;
+    button[data-baseweb="tab"] p {
+        color: #A8DADC !important;
     }
 
-    /* --- TARJETAS TIPO NOTIFICACIÓN iOS --- */
     .ios-notification-card {
         background-color: #14373B !important;
         border: 1px solid #1F4E53 !important;
@@ -184,54 +256,38 @@ st.markdown("""
         opacity: 0.8 !important;
     }
 
-    /* --- TABLA CLÁSICA --- */
-    div[data-testid="stDataFrame"],
-    div[data-testid="stTable"] {
+    div[data-testid="stDataFrame"], div[data-testid="stTable"] {
         background-color: #07191B !important;
         border-radius: 18px !important;
         border: 1px solid #1F4E53 !important;
         padding: 6px !important;
     }
 
-    /* --- MÉTRICAS Y CONTENEDORES --- */
-    [data-testid="stMetric"] {
+    [data-testid="stMetric"], [data-testid="stForm"] {
         background-color: #14373B !important;
         border-radius: 22px !important;
-        padding: 20px !important;
-        border: 1px solid #1F4E53 !important;
-    }
-
-    [data-testid="stForm"] {
-        background-color: #14373B !important;
-        border-radius: 24px !important;
         padding: 26px !important;
         border: 1px solid #1F4E53 !important;
     }
 
-    .stButton > button, [data-testid="stFormSubmitButton"] > button {
-        background-color: #F2ACC6 !important;
-        color: #0B2528 !important;
-        border-radius: 30px !important;
-        border: none !important;
-        padding: 10px 24px !important;
-        font-weight: 700 !important;
-    }
-
-    .stButton > button:hover, [data-testid="stFormSubmitButton"] > button:hover {
-        background-color: #8ECAE6 !important;
-        color: #0B2528 !important;
+    [data-testid="stExpander"] {
+        background-color: #14373B !important;
+        border: 1px solid #1F4E53 !important;
+        border-radius: 18px !important;
+        overflow: hidden !important;
     }
 
     [data-testid="stExpander"] summary {
-        background-color: #14373B !important;
-        border-radius: 18px !important;
+        background-color: transparent !important;
+        border: none !important;
         color: #8ECAE6 !important;
-        border: 1px solid #1F4E53 !important;
     }
 
-    hr {
-        border-color: #1F4E53 !important;
+    [data-testid="stExpander"] summary:hover {
+        color: #F2ACC6 !important;
     }
+
+    hr { border-color: #1F4E53 !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -253,16 +309,20 @@ try:
 except Exception:
     pass
 
-cat_dict = {c["name"]: c["id"] for c in categories_data}
-cat_info = {c["id"]: {"name": c["name"], "type": c.get("type", "gasto").lower()} for c in categories_data}
-existing_cats_str = ", ".join(sorted(list(cat_dict.keys()))) if cat_dict else "Ninguna creada aún"
+cat_options_map = {get_full_cat_label(c["name"]): c["id"] for c in categories_data}
+cat_info = {c["id"]: {"name": get_full_cat_label(c["name"]), "type": c.get("type", "gasto").lower()} for c in categories_data}
 
 if transactions_data:
     df = pd.DataFrame(transactions_data)
     df["date_parsed"] = pd.to_datetime(df["date"])
     df["period"] = df["date_parsed"].dt.strftime("%Y-%m")
-    df["category_name"] = df["category_id"].apply(lambda cid: cat_info.get(cid, {}).get("name", "Sin Categoría"))
-    df["category_type"] = df["category_id"].apply(lambda cid: cat_info.get(cid, {}).get("type", "gasto"))
+    df["category_name"] = df["category_id"].apply(lambda cid: cat_info.get(cid, {}).get("name", "🏷️ Sin Categoría"))
+    df["category_emoji"] = df["category_name"].apply(extract_emoji)
+    
+    if "type" in df.columns:
+        df["category_type"] = df["type"].astype(str).str.lower()
+    else:
+        df["category_type"] = df["category_id"].apply(lambda cid: cat_info.get(cid, {}).get("type", "gasto").lower())
 else:
     df = pd.DataFrame()
 
@@ -270,7 +330,7 @@ else:
 current_period = date.today().strftime("%Y-%m")
 current_period_label = format_period_es(current_period)
 
-st.title("💳 Control de Finanzas")
+st.title("Control de Finanzas")
 st.subheader(f"🗓️ Resumen de {current_period_label}")
 
 if not df.empty:
@@ -283,6 +343,7 @@ if not df.empty:
     total_exp_all = df[df["category_type"] == "gasto"]["amount"].sum()
     saldo_total = total_inc_all - total_exp_all
 else:
+    df_curr = pd.DataFrame()
     curr_inc, curr_exp, curr_net, saldo_total = 0.0, 0.0, 0.0, 0.0
 
 col_m1, col_m2, col_m3, col_m4 = st.columns(4)
@@ -292,7 +353,7 @@ col_m3.metric("Valor Neto del mes", f"{curr_net:.2f} €", delta=f"{curr_net:.2f
 col_m4.metric("Saldo Total", f"{saldo_total:.2f} €")
 st.divider()
 
-# --- 2. REGISTRO Y NOTIFICACIONES / TABLA ---
+# --- 2. REGISTRO Y ACTIVIDAD DEL MES ACTUAL ---
 col_form, col_data = st.columns([1.2, 1.8])
 
 with col_form:
@@ -303,37 +364,29 @@ with col_form:
         trans_type = st.radio("2. Tipo de movimiento", ["Gasto", "Ingreso"], horizontal=True)
         description = st.text_input("3. Descripción")
         
-        cat_input = st.text_input("4. Categoría", placeholder="Escribe o selecciona una categoría...")
-        if cat_dict:
-            st.caption(f"🏷️ **Categorías existentes:** {existing_cats_str}")
+        sorted_cat_labels = sorted(list(cat_options_map.keys()))
+
+        if sorted_cat_labels:
+            selected_cat_label = st.selectbox("4. Categoría", options=sorted_cat_labels)
+        else:
+            st.warning("⚠️ No hay categorías registradas.")
+            selected_cat_label = None
 
         selected_date = st.date_input("5. Fecha del movimiento", value=date.today(), format="DD/MM/YYYY")
 
-        submitted = st.form_submit_button("Guardar Movimiento")
+        st.write("")
+        submitted = st.form_submit_button("Guardar Movimiento", use_container_width=True)
         
         if submitted:
-            clean_cat_name = cat_input.strip()
-            
-            if not clean_cat_name:
-                st.warning("Escribe un nombre de categoría.")
+            if not selected_cat_label:
+                st.error("Debes seleccionar una categoría válida.")
             else:
-                selected_type_str = trans_type.lower()
-                matched_id = None
-                for existing_name, existing_id in cat_dict.items():
-                    if existing_name.lower() == clean_cat_name.lower():
-                        matched_id = existing_id
-                        break
-                
-                if matched_id:
-                    cat_id = matched_id
-                else:
-                    res_c = requests.post(f"{API_URL}/categories/", json={"name": clean_cat_name, "type": selected_type_str}, timeout=60)
-                    cat_id = res_c.json()["id"] if res_c.status_code == 200 else None
-
+                cat_id = cat_options_map.get(selected_cat_label)
                 if cat_id:
                     full_datetime = datetime.combine(selected_date, time.min)
                     payload = {
                         "amount": amount,
+                        "type": trans_type.lower(),
                         "description": description,
                         "category_id": cat_id,
                         "date": full_datetime.isoformat()
@@ -346,13 +399,14 @@ with col_form:
                         st.error("Error al guardar el movimiento.")
 
 with col_data:
-    tab_tabla, tab_grafico = st.tabs(["🔔 Actividad Reciente", "🍩 Distribución Global por Categorías"])
+    tab_tabla, tab_grafico = st.tabs(["🔔 Actividad del Mes", "🍩 Distribución del Mes por Categorías"])
     
-    if not df.empty:
-        if "id" in df.columns:
-            df_table = df.sort_values(by=["date_parsed", "id"], ascending=[False, False]).reset_index(drop=True)
+    # AQUÍ SE FILTRA ÚNICAMENTE EL MES ACTUAL (df_curr)
+    if not df_curr.empty:
+        if "id" in df_curr.columns:
+            df_table = df_curr.sort_values(by=["date_parsed", "id"], ascending=[False, False]).reset_index(drop=True)
         else:
-            df_table = df.sort_values(by="date_parsed", ascending=False).reset_index(drop=True)
+            df_table = df_curr.sort_values(by="date_parsed", ascending=False).reset_index(drop=True)
 
         df_table["date_formatted"] = df_table["date_parsed"].dt.strftime("%d/%m/%Y")
         
@@ -385,7 +439,6 @@ with col_data:
             st.write("")
 
             if ver_modo_tabla:
-                # VISTA DE TABLA TRADICIONAL
                 def style_tx_rows(row):
                     val = str(row["Monto (€)"])
                     bg_style = "background-color: #07191B; border-bottom: 1px solid #1F4E53;"
@@ -396,13 +449,8 @@ with col_data:
                     return [f"{bg_style} color: #FFFFFF;"] * len(row)
 
                 styled_df = df_display.style.apply(style_tx_rows, axis=1)
-                st.dataframe(
-                    styled_df,
-                    use_container_width=True,
-                    hide_index=True
-                )
+                st.dataframe(styled_df, use_container_width=True, hide_index=True)
             else:
-                # VISTA TARJETAS iOS
                 if "visible_cards" not in st.session_state:
                     st.session_state.visible_cards = 5
 
@@ -412,8 +460,13 @@ with col_data:
                     is_ingreso = row["category_type"] == "ingreso"
                     amount_color = "#8ECAE6" if is_ingreso else "#F2ACC6"
                     amount_sign = "+" if is_ingreso else "-"
-                    icon = "🟢" if is_ingreso else "🔻"
-                    desc_text = row['description'] if str(row['description']).strip() else row['category_name']
+                    icon = row["category_emoji"]
+                    
+                    title_name = row['category_name']
+                    if title_name.startswith(icon):
+                        title_name = title_name[len(icon):].strip()
+                        
+                    desc_text = row['description'] if str(row['description']).strip() else title_name
                     
                     card_html = f"""
                     <div class="ios-notification-card">
@@ -421,7 +474,7 @@ with col_data:
                             <div style="font-size: 1.4rem;">{icon}</div>
                             <div>
                                 <div style="display: flex; gap: 8px; align-items: center;">
-                                    <span class="ios-card-title">{row['category_name'].upper()}</span>
+                                    <span class="ios-card-title">{title_name.upper()}</span>
                                     <span style="color: #1F4E53; font-size: 0.8rem;">•</span>
                                     <span class="ios-card-date">{row['date_formatted']}</span>
                                 </div>
@@ -439,45 +492,136 @@ with col_data:
 
                 total_items = len(df_table)
                 if total_items > st.session_state.visible_cards:
-                    col_b1, col_b2, col_b3 = st.columns([1, 2, 1])
-                    with col_b2:
-                        if st.button(f"➕ Ver más movimientos ({st.session_state.visible_cards}/{total_items})", use_container_width=True):
-                            st.session_state.visible_cards += 5
-                            st.rerun()
+                    if st.button(f"➕ Ver más movimientos ({st.session_state.visible_cards}/{total_items})", use_container_width=True):
+                        st.session_state.visible_cards += 5
+                        st.rerun()
                 elif st.session_state.visible_cards > 5:
-                    col_b1, col_b2, col_b3 = st.columns([1, 2, 1])
-                    with col_b2:
-                        if st.button("🔄 Mostrar menos", use_container_width=True):
-                            st.session_state.visible_cards = 5
-                            st.rerun()
+                    if st.button("🔄 Mostrar menos", use_container_width=True):
+                        st.session_state.visible_cards = 5
+                        st.rerun()
 
         with tab_grafico:
-            cat_summary = df.groupby("category_name")["amount"].sum().reset_index()
-            palette = ["#F2ACC6", "#8ECAE6", "#A8DADC", "#E7C6FF", "#B8C0FF"]
-            
-            fig_pie = px.pie(
-                cat_summary, values="amount", names="category_name", hole=0.6, color_discrete_sequence=palette
-            )
-            fig_pie.update_traces(
-                textposition='outside', textinfo='label+percent',
-                marker=dict(line=dict(color='#0B2528', width=2)),
-                hovertemplate="<b>%{label}</b><br>Monto: %{value:.2f} €<br>Porcentaje: %{percent}"
-            )
-            fig_pie.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                font=dict(family="Comfortaa, sans-serif", size=13, color="#FFFFFF"),
-                margin=dict(t=20, b=20, l=20, r=20), showlegend=False, height=350
-            )
-            st.plotly_chart(fig_pie, use_container_width=True)
+            col_filter, _ = st.columns([2.5, 1])
+            with col_filter:
+                tipo_grafico = st.radio(
+                    "Mostrar en el rosco:",
+                    ["Solo Gastos", "Todos (Gastos e Ingresos)", "Solo Ingresos"],
+                    horizontal=True,
+                    key="pie_filter_type"
+                )
+
+            # ROSCO SOLO DEL MES ACTUAL
+            if tipo_grafico == "Solo Gastos":
+                df_pie = df_curr[df_curr["category_type"] == "gasto"]
+            elif tipo_grafico == "Solo Ingresos":
+                df_pie = df_curr[df_curr["category_type"] == "ingreso"]
+            else:
+                df_pie = df_curr.copy()
+
+            if not df_pie.empty:
+                cat_summary = df_pie.groupby(["category_name", "category_emoji", "category_type"])["amount"].sum().reset_index()
+                cat_summary["type_label"] = cat_summary["category_type"].str.capitalize()
+                
+                palette = ["#F2ACC6", "#8ECAE6", "#A8DADC", "#E7C6FF", "#B8C0FF", "#FFB703", "#FB8500", "#52B788", "#74C69D"]
+                
+                fig_pie = px.pie(
+                    cat_summary, 
+                    values="amount", 
+                    names="category_name",
+                    hole=0.55, 
+                    color_discrete_sequence=palette,
+                    custom_data=["category_emoji", "category_name", "type_label"]
+                )
+                
+                fig_pie.update_traces(
+                    texttemplate='%{customdata[0]} %{percent}',
+                    textposition='outside', 
+                    textfont=dict(size=12),
+                    marker=dict(line=dict(color='#0B2528', width=2)),
+                    hovertemplate="<b>%{customdata[1]}</b> (%{customdata[2]})<br>Monto: %{value:.2f} €<br>Porcentaje: %{percent}"
+                )
+                fig_pie.update_layout(
+                    paper_bgcolor="rgba(0,0,0,0)", 
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    font=dict(family="Comfortaa, sans-serif", size=12, color="#FFFFFF"),
+                    margin=dict(t=40, b=40, l=40, r=40), 
+                    showlegend=False, 
+                    height=420
+                )
+                st.plotly_chart(fig_pie, use_container_width=True, config=PLOTLY_CONFIG)
+            else:
+                st.info("No hay datos registrados en este mes para el filtro seleccionado.")
     else:
         with tab_tabla:
-            st.info("No hay transacciones registradas todavía.")
+            st.info("No hay movimientos registrados en el mes actual.")
         with tab_grafico:
-            st.info("Añade movimientos para visualizar la distribución.")
+            st.info("Añade movimientos en el mes actual para visualizar el rosco.")
 
 st.divider()
 
-# --- 3. DESPLEGABLE: CONSULTA Y DETALLE POR MES ---
+# --- 3. DESPLEGABLE 1: GESTIÓN DE CATEGORÍAS ---
+with st.expander("🏷️ Gestión de Categorías", expanded=False):
+    col_add_c, col_del_c = st.columns(2)
+    
+    with col_add_c:
+        with st.form("add_cat_form", clear_on_submit=True):
+            st.markdown("##### ➕ Crear Nueva Categoría")
+            
+            c_emo, c_nom = st.columns([1, 3])
+            with c_emo:
+                cat_emoji_input = st.text_input("Emoji", value="🏷️")
+            with c_nom:
+                cat_name_input = st.text_input("Nombre de la categoría")
+                
+            submit_cat = st.form_submit_button("Crear Categoría", use_container_width=True)
+            
+            if submit_cat:
+                clean_name = cat_name_input.strip()
+                emoji_str = cat_emoji_input.strip() if cat_emoji_input.strip() else "🏷️"
+                
+                if not clean_name:
+                    st.warning("Escribe un nombre para la categoría.")
+                else:
+                    if extract_emoji(clean_name) != "🏷️":
+                        full_cat_name = clean_name
+                    else:
+                        full_cat_name = f"{emoji_str} {clean_name}"
+                        
+                    existing_names_lower = [c["name"].lower() for c in categories_data]
+                    if full_cat_name.lower() in existing_names_lower:
+                        st.warning("Esta categoría ya existe.")
+                    else:
+                        res_c = requests.post(
+                            f"{API_URL}/categories/",
+                            json={"name": full_cat_name},
+                            timeout=60
+                        )
+                        if res_c.status_code == 200:
+                            st.success(f"¡Categoría '{full_cat_name}' creada correctamente!")
+                            st.rerun()
+                        else:
+                            st.error("Error al crear la categoría.")
+
+    with col_del_c:
+        with st.form("del_cat_form"):
+            st.markdown("##### 🗑️ Eliminar Categoría")
+            if categories_data:
+                selected_del_label = st.selectbox("Selecciona la categoría a eliminar:", sorted(list(cat_options_map.keys())))
+                submit_del = st.form_submit_button("Eliminar Categoría", use_container_width=True)
+                
+                if submit_del:
+                    target_id = cat_options_map[selected_del_label]
+                    res_del = requests.delete(f"{API_URL}/categories/{target_id}", timeout=60)
+                    if res_del.status_code == 200:
+                        st.success("Categoría eliminada con éxito.")
+                        st.rerun()
+                    else:
+                        st.error("No se pudo eliminar la categoría (es posible que tenga movimientos vinculados).")
+            else:
+                st.info("No hay categorías registradas.")
+                st.form_submit_button("Eliminar Categoría", disabled=True, use_container_width=True)
+
+# --- 4. DESPLEGABLE 2: CONSULTA Y DETALLE POR MES ---
 with st.expander("🔍 Consulta y Detalle por Mes", expanded=False):
     if not df.empty:
         available_periods = sorted(df["period"].unique(), reverse=True)
@@ -511,55 +655,59 @@ with st.expander("🔍 Consulta y Detalle por Mes", expanded=False):
         with col_gasto_chart:
             st.markdown("##### 🔻 Gastos por Categoría")
             if not df_month_gastos.empty:
-                gastos_cat = df_month_gastos.groupby("category_name")["amount"].sum().reset_index().sort_values(by="amount", ascending=False)
+                gastos_cat = df_month_gastos.groupby(["category_name", "category_emoji"])["amount"].sum().reset_index().sort_values(by="amount", ascending=False)
                 fig_gastos = px.bar(
-                    gastos_cat, x="category_name", y="amount", text="amount",
+                    gastos_cat, x="category_emoji", y="amount", text="amount",
+                    custom_data=["category_name"],
                     color_discrete_sequence=["#F2ACC6"]
                 )
                 fig_gastos.update_traces(
                     texttemplate='-%{text:.2f} €', textposition='outside',
                     textfont=dict(color="#F2ACC6", size=11),
+                    hovertemplate="<b>%{customdata[0]}</b><br>Monto: %{y:.2f} €",
                     marker=dict(cornerradius=12, line_width=0)
                 )
                 fig_gastos.update_layout(
                     paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
                     font=dict(family="Comfortaa, sans-serif", size=12, color="#FFFFFF"),
-                    xaxis=dict(title="", showgrid=False, linecolor="#1F4E53"),
-                    yaxis=dict(title="Monto (€)", showgrid=True, gridcolor="#14373B", zeroline=False),
+                    xaxis=dict(title="", showgrid=False, linecolor="#1F4E53", tickfont=dict(size=18), fixedrange=True),
+                    yaxis=dict(title="Monto (€)", showgrid=True, gridcolor="#14373B", zeroline=False, fixedrange=True),
                     height=340, margin=dict(t=30, b=20, l=10, r=10)
                 )
-                st.plotly_chart(fig_gastos, use_container_width=True)
+                st.plotly_chart(fig_gastos, use_container_width=True, config=PLOTLY_CONFIG)
             else:
                 st.info("No hay gastos registrados en este mes.")
                 
         with col_ingreso_chart:
             st.markdown("##### 🟢 Ingresos por Categoría")
             if not df_month_ingresos.empty:
-                ingresos_cat = df_month_ingresos.groupby("category_name")["amount"].sum().reset_index().sort_values(by="amount", ascending=False)
+                ingresos_cat = df_month_ingresos.groupby(["category_name", "category_emoji"])["amount"].sum().reset_index().sort_values(by="amount", ascending=False)
                 fig_ingresos = px.bar(
-                    ingresos_cat, x="category_name", y="amount", text="amount",
+                    ingresos_cat, x="category_emoji", y="amount", text="amount",
+                    custom_data=["category_name"],
                     color_discrete_sequence=["#8ECAE6"]
                 )
                 fig_ingresos.update_traces(
                     texttemplate='+%{text:.2f} €', textposition='outside',
                     textfont=dict(color="#8ECAE6", size=11),
+                    hovertemplate="<b>%{customdata[0]}</b><br>Monto: %{y:.2f} €",
                     marker=dict(cornerradius=12, line_width=0)
                 )
                 fig_ingresos.update_layout(
                     paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
                     font=dict(family="Comfortaa, sans-serif", size=12, color="#FFFFFF"),
-                    xaxis=dict(title="", showgrid=False, linecolor="#1F4E53"),
-                    yaxis=dict(title="Monto (€)", showgrid=True, gridcolor="#14373B", zeroline=False),
+                    xaxis=dict(title="", showgrid=False, linecolor="#1F4E53", tickfont=dict(size=18), fixedrange=True),
+                    yaxis=dict(title="Monto (€)", showgrid=True, gridcolor="#14373B", zeroline=False, fixedrange=True),
                     height=340, margin=dict(t=30, b=20, l=10, r=10)
                 )
-                st.plotly_chart(fig_ingresos, use_container_width=True)
+                st.plotly_chart(fig_ingresos, use_container_width=True, config=PLOTLY_CONFIG)
             else:
                 st.info("No hay ingresos registrados en este mes.")
     else:
         st.info("No hay transacciones registradas para consultar.")
 
-# --- 4. DESPLEGABLE: HISTÓRICO GLOBAL ---
-with st.expander("🌐 Histórico Global y Totales de la App", expanded=False):
+# --- 5. DESPLEGABLE 3: HISTÓRICO GLOBAL ---
+with st.expander("🌐 Histórico Global", expanded=False):
     if not df.empty:
         total_income = df[df["category_type"] == "ingreso"]["amount"].sum()
         total_expense = df[df["category_type"] == "gasto"]["amount"].sum()
@@ -573,88 +721,42 @@ with st.expander("🌐 Histórico Global y Totales de la App", expanded=False):
         h_col3.metric("Valor Neto Histórico", f"{net_value:.2f} €")
         h_col4.metric("Saldo Total Disponible", f"{total_balance:.2f} €")
         
-        st.markdown("##### 📈 Evolución Histórica")
+        st.markdown("##### 📊 Balance Neto Histórico por Categoría")
         
-        cat_options = ["🌐 Todas las categorías (Visión General)"] + sorted(df["category_name"].unique().tolist())
-        selected_hist_cat = st.selectbox("Filtrar gráfico histórico por:", cat_options)
+        df_net = df.copy()
+        df_net["signed_amount"] = df_net.apply(
+            lambda r: r["amount"] if r["category_type"] == "ingreso" else -r["amount"],
+            axis=1
+        )
         
-        if selected_hist_cat == "🌐 Todas las categorías (Visión General)":
-            df_hist = df.groupby(["period", "category_type"])["amount"].sum().unstack(fill_value=0).reset_index()
-            if "ingreso" not in df_hist.columns:
-                df_hist["ingreso"] = 0.0
-            if "gasto" not in df_hist.columns:
-                df_hist["gasto"] = 0.0
-                
-            df_hist = df_hist.sort_values(by="period")
-            df_hist["period_label"] = df_hist["period"].apply(format_period_es)
-            
-            fig_bar = go.Figure()
-            fig_bar.add_trace(go.Bar(
-                x=df_hist["period_label"],
-                y=df_hist["ingreso"],
-                name="Ingresos",
-                marker=dict(color="#8ECAE6", cornerradius=12),
-                text=[f"+{v:.2f} €" for v in df_hist["ingreso"]],
-                textposition="outside",
-                textfont=dict(color="#8ECAE6", size=11)
-            ))
-            fig_bar.add_trace(go.Bar(
-                x=df_hist["period_label"],
-                y=df_hist["gasto"],
-                name="Gastos",
-                marker=dict(color="#F2ACC6", cornerradius=12),
-                text=[f"-{v:.2f} €" for v in df_hist["gasto"]],
-                textposition="outside",
-                textfont=dict(color="#F2ACC6", size=11)
-            ))
-
-            fig_bar.update_layout(
-                barmode="group",
-                bargap=0.4,
-                bargroupgap=0.15,
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
-                font=dict(family="Comfortaa, sans-serif", size=12, color="#FFFFFF"),
-                xaxis=dict(showgrid=False, linecolor="#1F4E53"),
-                yaxis=dict(showgrid=True, gridcolor="#14373B", zeroline=False),
-                margin=dict(t=30, b=20, l=10, r=10),
-                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-                height=360
-            )
-            st.plotly_chart(fig_bar, use_container_width=True)
-        else:
-            df_cat_hist = df[df["category_name"] == selected_hist_cat].copy()
-            cat_type = df_cat_hist["category_type"].iloc[0] if not df_cat_hist.empty else "gasto"
-            
-            df_cat_summary = df_cat_hist.groupby("period")["amount"].sum().reset_index().sort_values(by="period")
-            df_cat_summary["period_label"] = df_cat_summary["period"].apply(format_period_es)
-            
-            bar_color = "#8ECAE6" if cat_type == "ingreso" else "#F2ACC6"
-            text_color = "#8ECAE6" if cat_type == "ingreso" else "#F2ACC6"
-            prefix = "+" if cat_type == "ingreso" else "-"
-            
-            fig_cat = go.Figure()
-            fig_cat.add_trace(go.Bar(
-                x=df_cat_summary["period_label"],
-                y=df_cat_summary["amount"],
-                name=selected_hist_cat,
-                marker=dict(color=bar_color, cornerradius=12),
-                text=[f"{prefix}{v:.2f} €" for v in df_cat_summary["amount"]],
-                textposition="outside",
-                textfont=dict(color=text_color, size=11)
-            ))
-            
-            fig_cat.update_layout(
-                bargap=0.5,
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
-                font=dict(family="Comfortaa, sans-serif", size=12, color="#FFFFFF"),
-                xaxis=dict(showgrid=False, linecolor="#1F4E53"),
-                yaxis=dict(title="Monto (€)", showgrid=True, gridcolor="#14373B", zeroline=False),
-                margin=dict(t=30, b=20, l=10, r=10),
-                showlegend=False,
-                height=360
-            )
-            st.plotly_chart(fig_cat, use_container_width=True)
+        cat_net = df_net.groupby(["category_name", "category_emoji"])["signed_amount"].sum().reset_index()
+        cat_net = cat_net.sort_values(by="signed_amount", ascending=True)
+        
+        bar_colors = ["#8ECAE6" if val >= 0 else "#F2ACC6" for val in cat_net["signed_amount"]]
+        text_labels = [f"+{val:.2f} €" if val >= 0 else f"{val:.2f} €" for val in cat_net["signed_amount"]]
+        
+        fig_global_net = go.Figure()
+        fig_global_net.add_trace(go.Bar(
+            x=cat_net["category_emoji"],
+            y=cat_net["signed_amount"],
+            marker=dict(color=bar_colors, cornerradius=10),
+            text=text_labels,
+            textposition="outside",
+            textfont=dict(color=bar_colors, size=11),
+            customdata=cat_net["category_name"],
+            hovertemplate="<b>%{customdata}</b><br>Balance Neto: %{y:.2f} €<extra></extra>"
+        ))
+        
+        fig_global_net.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(family="Comfortaa, sans-serif", size=12, color="#FFFFFF"),
+            xaxis=dict(title="", showgrid=False, linecolor="#1F4E53", tickfont=dict(size=18), fixedrange=True),
+            yaxis=dict(title="Balance Neto (€)", showgrid=True, gridcolor="#14373B", zeroline=True, zerolinecolor="#2D6A70", fixedrange=True),
+            margin=dict(t=40, b=20, l=10, r=10),
+            showlegend=False,
+            height=380
+        )
+        st.plotly_chart(fig_global_net, use_container_width=True, config=PLOTLY_CONFIG)
     else:
         st.info("No hay datos históricos registrados.")
