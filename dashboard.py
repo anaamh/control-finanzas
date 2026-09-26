@@ -14,17 +14,38 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- INYECCIÓN EN EL HEAD DE SAFARI PARA IPHONE (APPLE-TOUCH-ICON) ---
+# --- INYECCIÓN FORZADA EN EL HEAD DE SAFARI (ELIMINA EL ICONO DE STREAMLIT) ---
 try:
     with open("logo.png", "rb") as image_file:
         encoded_logo = base64.b64encode(image_file.read()).decode()
     
     components.html(f"""
         <script>
-            var link = parent.document.createElement('link');
-            link.rel = 'apple-touch-icon';
-            link.href = 'data:image/png;base64,{encoded_logo}';
-            parent.document.getElementsByTagName('head')[0].appendChild(link);
+            function fixSafariIcon() {{
+                var head = parent.document.getElementsByTagName('head')[0];
+                if (!head) return;
+                
+                // 1. Eliminar cualquier icono por defecto de Streamlit
+                var existingIcons = parent.document.querySelectorAll("link[rel*='icon']");
+                existingIcons.forEach(function(el) {{
+                    el.remove();
+                }});
+                
+                // 2. Inyectar tu logo como apple-touch-icon
+                var appleLink = parent.document.createElement('link');
+                appleLink.rel = 'apple-touch-icon';
+                appleLink.href = 'data:image/png;base64,{encoded_logo}';
+                head.appendChild(appleLink);
+                
+                var applePre = parent.document.createElement('link');
+                applePre.rel = 'apple-touch-icon-precomposed';
+                applePre.href = 'data:image/png;base64,{encoded_logo}';
+                head.appendChild(applePre);
+            }}
+            
+            // Ejecutar inmediatamente y tras cargar
+            fixSafariIcon();
+            setTimeout(fixSafariIcon, 1500);
         </script>
     """, height=0)
 except Exception:
