@@ -6,7 +6,11 @@ import plotly.graph_objects as go
 from datetime import date, datetime, time
 
 API_URL = "https://control-finanzas-api-eoqj.onrender.com"
-st.set_page_config(page_title="Control de Finanzas", layout="wide")
+st.set_page_config(
+    page_title="Finanzas", 
+    page_icon="logo.png", 
+    layout="wide"
+)
 
 PLOTLY_CONFIG = {
     'displayModeBar': False,
