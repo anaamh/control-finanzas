@@ -20,7 +20,7 @@ MESES_ES = {
 }
 
 DEFAULT_EMOJIS = {
-    "saldo": "🪎", "familia": "🫀", "lee": "🔬", "cultura": "🎟️", "artes": "🎟️",
+    "saldo": "💰", "familia": "🫀", "lee": "🔬", "cultura": "🎟️", "artes": "🎟️",
     "comida": "🥘", "uji": "🎓", "amigos": "🎁", "restaurante": "🥘", "supermercado": "🛒",
     "compras": "🛍️", "transporte": "🚗", "gasolina": "⛽", "casa": "🏠", "hogar": "🏠",
     "alquiler": "🔑", "ocio": "🎉", "entretenimiento": "🎬", "salud": "🏥", "farmacia": "💊",
