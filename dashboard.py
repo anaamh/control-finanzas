@@ -4,13 +4,30 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import date, datetime, time
+import base64
 
-API_URL = "https://control-finanzas-api-eoqj.onrender.com"
+# --- CONFIGURACIÓN DE PÁGINA (Debe ser la primera instrucción de Streamlit) ---
 st.set_page_config(
     page_title="Finanzas", 
     page_icon="logo.png", 
     layout="wide"
 )
+
+# --- INYECTAR ICONO EN BASE64 PARA IPHONE / IOS (APPLE-TOUCH-ICON) ---
+try:
+    with open("logo.png", "rb") as image_file:
+        encoded_logo = base64.b64encode(image_file.read()).decode()
+    
+    st.markdown(
+        f'''
+        <link rel="apple-touch-icon" href="data:image/png;base64,{encoded_logo}">
+        ''',
+        unsafe_allow_html=True
+    )
+except Exception:
+    pass
+
+API_URL = "https://control-finanzas-api-eoqj.onrender.com"
 
 PLOTLY_CONFIG = {
     'displayModeBar': False,
@@ -405,7 +422,7 @@ with col_form:
 with col_data:
     tab_tabla, tab_grafico = st.tabs(["🔔 Actividad del Mes", "🍩 Distribución del Mes por Categorías"])
     
-    # AQUÍ SE FILTRA ÚNICAMENTE EL MES ACTUAL (df_curr)
+    # FILTRO ÚNICAMENTE PARA EL MES ACTUAL (df_curr)
     if not df_curr.empty:
         if "id" in df_curr.columns:
             df_table = df_curr.sort_values(by=["date_parsed", "id"], ascending=[False, False]).reset_index(drop=True)
