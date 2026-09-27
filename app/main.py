@@ -4,7 +4,7 @@ from typing import List, Optional, Union
 from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from sqlmodel import SQLModel, Field, Session, create_engine, select
+from sqlmodel import SQLModel, Field, Session, create_engine, select, text
 
 # --- CONEXIÓN A BASE DE DATOS EN LA NUBE (SUPABASE / RENDER) ---
 DATABASE_URL = os.getenv(
@@ -18,6 +18,31 @@ engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
+    with Session(engine) as session:
+        try:
+            # 1. Crear la columna 'type' en PostgreSQL si no existe
+            session.exec(text('ALTER TABLE "transaction" ADD COLUMN IF NOT EXISTS type VARCHAR;'))
+            session.commit()
+            
+            # 2. Rellenar registros antiguos usando el tipo de su categoría asignada
+            session.exec(text('''
+                UPDATE "transaction" 
+                SET type = LOWER(category.type) 
+                FROM category 
+                WHERE "transaction".category_id = category.id 
+                  AND ("transaction".type IS NULL OR "transaction".type = '');
+            '''))
+            session.commit()
+
+            # 3. Asignar 'gasto' a cualquier registro restante sin tipo
+            session.exec(text('''
+                UPDATE "transaction" 
+                SET type = 'gasto' 
+                WHERE type IS NULL OR type = '';
+            '''))
+            session.commit()
+        except Exception as e:
+            session.rollback()
 
 
 def get_session():
@@ -25,7 +50,7 @@ def get_session():
         yield session
 
 
-# --- MODELOS DE DATOS (BASE DE DATOS INTACTA) ---
+# --- MODELOS DE DATOS (TABLAS EN LA BASE DE DATOS) ---
 class Category(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str
@@ -37,6 +62,7 @@ class Transaction(SQLModel, table=True):
     amount: float
     description: Optional[str] = None
     category_id: int = Field(foreign_key="category.id")
+    type: Optional[str] = Field(default="gasto")
     date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -54,9 +80,8 @@ class TransactionCreate(SQLModel):
     date: Optional[Union[datetime, str]] = None
 
 
-# --- DETERMINADOR PRECISO DE TIPO ---
-def determine_type(tx_type_param: Optional[str], category: Optional[Category]) -> str:
-    # 1. Prioridad: Tipo enviado directamente en el envío del formulario
+# --- CLASIFICADOR DE TIPO ---
+def resolve_type(tx_type_param: Optional[str], category: Optional[Category]) -> str:
     if tx_type_param and tx_type_param.strip():
         t = tx_type_param.strip().lower()
         if "ingres" in t or "income" in t:
@@ -64,21 +89,13 @@ def determine_type(tx_type_param: Optional[str], category: Optional[Category]) -
         if "gast" in t or "egres" in t or "expense" in t:
             return "gasto"
 
-    # 2. Prioridad: Tipo definido en la categoría asociada
     if category and category.type:
         cat_type = category.type.strip().lower()
-        if "gast" in cat_type or "egres" in cat_type or "expense" in cat_type:
-            return "gasto"
         if "ingres" in cat_type or "income" in cat_type or "gananc" in cat_type:
             return "ingreso"
+        if "gast" in cat_type or "egres" in cat_type or "expense" in cat_type:
+            return "gasto"
 
-    # 3. Prioridad: Nombre de la categoría (regla de respaldo para datos antiguos)
-    if category and category.name:
-        cat_name = category.name.strip().lower()
-        if any(w in cat_name for w in ["sueldo", "nomina", "nómina", "ingreso", "cobro", "ventas", "venta"]):
-            return "ingreso"
-
-    # 4. Por defecto: Todo movimiento no clasificado es GASTO
     return "gasto"
 
 
@@ -155,25 +172,27 @@ def create_transaction(transaction: TransactionCreate, session: Session = Depend
     if parsed_date.tzinfo is None:
         parsed_date = parsed_date.replace(tzinfo=timezone.utc)
 
+    tx_type = resolve_type(transaction.type, category)
+
     try:
         db_transaction = Transaction(
             amount=float(transaction.amount),
             description=transaction.description,
             category_id=transaction.category_id,
+            type=tx_type,
             date=parsed_date
         )
         session.add(db_transaction)
         session.commit()
         session.refresh(db_transaction)
 
-        tx_type = determine_type(transaction.type, category)
         return {
             "id": db_transaction.id,
             "amount": db_transaction.amount,
             "description": db_transaction.description,
             "category_id": db_transaction.category_id,
             "date": db_transaction.date,
-            "type": tx_type,
+            "type": db_transaction.type,
             "category_name": category.name
         }
     except Exception as e:
@@ -190,7 +209,7 @@ def read_transactions(session: Session = Depends(get_session)):
     output = []
     for tx in txs:
         cat = cat_map.get(tx.category_id)
-        tx_type = determine_type(None, cat)
+        tx_type = resolve_type(tx.type, cat)
         output.append({
             "id": tx.id,
             "amount": tx.amount,
@@ -216,7 +235,7 @@ def get_balance_summary(session: Session = Depends(get_session)):
     for tx in txs:
         cat = cat_map.get(tx.category_id)
         amt = abs(tx.amount)
-        if determine_type(None, cat) == "ingreso":
+        if resolve_type(tx.type, cat) == "ingreso":
             total_income += amt
         else:
             total_expense += amt
@@ -245,7 +264,7 @@ def get_monthly_history(session: Session = Depends(get_session)):
         
         cat = cat_map.get(tx.category_id)
         amt = abs(tx.amount)
-        if determine_type(None, cat) == "ingreso":
+        if resolve_type(tx.type, cat) == "ingreso":
             monthly_data[period]["income"] += amt
         else:
             monthly_data[period]["expense"] += amt
