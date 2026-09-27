@@ -46,23 +46,23 @@
 
         <!-- PESTAÑA 1: INICIO (MES ACTUAL) -->
         <section id="tab-inicio" class="space-y-6">
-            <!-- KPIs Mes Actual + Saldo Total (Organizado 2x2: Ingresos y Gastos arriba, Balance y Saldo Total abajo) -->
+            <!-- KPIs Mes Actual + Saldo Total -->
             <div class="grid grid-cols-2 gap-3.5">
                 <div class="bg-app-input p-4 rounded-2xl text-center border border-sky-900/40 shadow-sm">
                     <p class="text-sm sm:text-base text-sky-200/80 font-bold uppercase tracking-wider">Ingresos</p>
-                    <p id="kpi-ingresos-mes" class="text-xl sm:text-2xl font-black text-emerald-pastel mt-1">0.00 €</p>
+                    <p id="kpi-ingresos-mes" class="text-xl sm:text-2xl font-black text-emerald-pastel mt-1 whitespace-nowrap">0.00 €</p>
                 </div>
                 <div class="bg-app-input p-4 rounded-2xl text-center border border-sky-900/40 shadow-sm">
                     <p class="text-sm sm:text-base text-sky-200/80 font-bold uppercase tracking-wider">Gastos</p>
-                    <p id="kpi-gastos-mes" class="text-xl sm:text-2xl font-black text-pink-pastel mt-1">0.00 €</p>
+                    <p id="kpi-gastos-mes" class="text-xl sm:text-2xl font-black text-pink-pastel mt-1 whitespace-nowrap">0.00 €</p>
                 </div>
                 <div class="bg-app-input p-4 rounded-2xl text-center border border-sky-900/40 shadow-sm">
                     <p class="text-sm sm:text-base text-sky-200/80 font-bold uppercase tracking-wider">Balance</p>
-                    <p id="kpi-balance-mes" class="text-xl sm:text-2xl font-black text-cyan-pastel mt-1">0.00 €</p>
+                    <p id="kpi-balance-mes" class="text-xl sm:text-2xl font-black text-cyan-pastel mt-1 whitespace-nowrap">0.00 €</p>
                 </div>
                 <div class="bg-app-input p-4 rounded-2xl text-center border border-sky-900/40 shadow-sm">
                     <p class="text-sm sm:text-base text-sky-200/80 font-bold uppercase tracking-wider">Saldo Total</p>
-                    <p id="saldo-total-destacado" class="text-xl sm:text-2xl font-black text-white mt-1">0.00 €</p>
+                    <p id="saldo-total-destacado" class="text-xl sm:text-2xl font-black text-white mt-1 whitespace-nowrap">0.00 €</p>
                 </div>
             </div>
 
@@ -74,9 +74,8 @@
                     <div>
                         <label class="text-base text-sky-200/80 font-bold block mb-1">Fecha</label>
                         <input type="hidden" id="inp-fecha">
-                        <button type="button" onclick="abrirCalendario('form', 'dia')" class="w-full bg-[#062836] border border-sky-800 text-lg rounded-2xl p-3.5 text-left font-bold text-sky-100 flex justify-between items-center">
+                        <button type="button" onclick="abrirCalendario('form', 'dia')" class="w-full bg-[#062836] border border-sky-800 text-lg rounded-2xl p-3.5 text-left font-bold text-sky-100 flex items-center justify-between">
                             <span id="txt-fecha-mostrar">Seleccionar fecha</span>
-                            <span class="text-xl">📅</span>
                         </button>
                     </div>
                     <div>
@@ -86,16 +85,35 @@
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
-                    <div>
+                    <!-- Desplegable Personalizado: Tipo -->
+                    <div class="relative" id="dropdown-tipo-container">
                         <label class="text-base text-sky-200/80 font-bold block mb-1">Tipo</label>
-                        <select id="sel-tipo-mov" class="w-full bg-[#062836] border border-sky-800 text-lg rounded-2xl p-3.5 font-bold text-white focus:outline-none">
-                            <option value="gasto">Gasto</option>
-                            <option value="ingreso">Ingreso</option>
-                        </select>
+                        <input type="hidden" id="sel-tipo-mov" value="gasto">
+                        <button type="button" id="btn-dropdown-tipo" onclick="toggleDropdownTipo()" class="w-full bg-[#062836] border border-sky-800 text-lg rounded-2xl p-3.5 font-bold text-white flex justify-between items-center text-left focus:outline-none">
+                            <span id="lbl-tipo-mov">Gasto</span>
+                            <span class="text-xs text-cyan-pastel">▼</span>
+                        </button>
+                        <div id="opts-tipo-mov" class="hidden absolute left-0 right-0 top-full mt-2 bg-[#093142] border border-sky-800 rounded-2xl shadow-2xl z-30 overflow-hidden p-1 space-y-1">
+                            <button type="button" onclick="seleccionarTipo('gasto', 'Gasto')" class="w-full text-left px-4 py-3 font-bold text-sky-100 hover:bg-sky-900/60 transition rounded-xl flex items-center gap-2">
+                                <span>Gasto</span>
+                            </button>
+                            <button type="button" onclick="seleccionarTipo('ingreso', 'Ingreso')" class="w-full text-left px-4 py-3 font-bold text-sky-100 hover:bg-sky-900/60 transition rounded-xl flex items-center gap-2">
+                                <span>Ingreso</span>
+                            </button>
+                        </div>
                     </div>
-                    <div>
+
+                    <!-- Desplegable Personalizado: Categoría -->
+                    <div class="relative" id="dropdown-cat-container">
                         <label class="text-base text-sky-200/80 font-bold block mb-1">Categoría</label>
-                        <select id="sel-categoria" required class="w-full bg-[#062836] border border-sky-800 text-lg rounded-2xl p-3.5 font-bold text-white focus:outline-none"></select>
+                        <input type="hidden" id="sel-categoria" value="">
+                        <button type="button" id="btn-dropdown-cat" onclick="toggleDropdownCat()" class="w-full bg-[#062836] border border-sky-800 text-lg rounded-2xl p-3.5 font-bold text-white flex justify-between items-center text-left focus:outline-none">
+                            <span id="lbl-categoria" class="text-sky-200/50 truncate">Seleccionar</span>
+                            <span class="text-xs text-cyan-pastel ml-1 shrink-0">▼</span>
+                        </button>
+                        <div id="opts-categoria" class="hidden absolute left-0 right-0 top-full mt-2 bg-[#093142] border border-sky-800 rounded-2xl shadow-2xl z-30 overflow-hidden max-h-60 overflow-y-auto p-1 space-y-1">
+                            <!-- Opciones inyectadas dinámicamente -->
+                        </div>
                     </div>
                 </div>
 
@@ -124,12 +142,11 @@
             </div>
 
             <!-- 3. Controles Modo Vista -->
-            <div class="flex justify-between items-center bg-[#093142] p-2.5 rounded-2xl border border-sky-900/50">
-                <span class="text-lg font-bold text-sky-200/80 ml-2">Movimientos del Mes</span>
-                <div class="flex space-x-1.5">
-                    <button id="btn-p1-notis" onclick="cambiarModoVistaP1('notis')" class="px-4 py-2 text-base font-black rounded-xl bg-pink-pastel text-sky-950">Lista</button>
-                    <button id="btn-p1-tabla" onclick="cambiarModoVistaP1('tabla')" class="px-4 py-2 text-base font-extrabold rounded-xl text-sky-200/80">Tabla</button>
-                    <button id="btn-p1-graficos" onclick="cambiarModoVistaP1('graficos')" class="px-4 py-2 text-base font-extrabold rounded-xl text-sky-200/80">Gráfico</button>
+            <div class="bg-[#093142] p-2 rounded-2xl border border-sky-900/50">
+                <div class="flex space-x-2 w-full">
+                    <button id="btn-p1-notis" onclick="cambiarModoVistaP1('notis')" class="flex-1 py-2.5 text-base font-black rounded-xl bg-pink-pastel text-sky-950 text-center transition">Lista</button>
+                    <button id="btn-p1-tabla" onclick="cambiarModoVistaP1('tabla')" class="flex-1 py-2.5 text-base font-extrabold rounded-xl text-sky-200/80 text-center transition">Tabla</button>
+                    <button id="btn-p1-graficos" onclick="cambiarModoVistaP1('graficos')" class="flex-1 py-2.5 text-base font-extrabold rounded-xl text-sky-200/80 text-center transition">Gráfico</button>
                 </div>
             </div>
 
@@ -139,15 +156,14 @@
                 <button id="btn-p1-ver-mas" onclick="toggleVerMasP1()" class="w-full py-3 text-lg font-extrabold text-cyan-pastel hover:underline text-center">Ver más</button>
             </div>
 
-            <!-- Vista 2: Tabla -->
+            <!-- Vista 2: Tabla (Sin columna Tipo) -->
             <div id="p1-vista-tabla" class="hidden bg-app-input rounded-2xl p-4 border border-sky-900/40 overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="text-xs sm:text-sm text-sky-200/60 uppercase border-b border-sky-800/50">
                             <th class="pb-2 px-2">Fecha</th>
-                            <th class="pb-2 px-2">Tipo</th>
-                            <th class="pb-2 px-2">Cat.</th>
-                            <th class="pb-2 px-2">Desc.</th>
+                            <th class="pb-2 px-2 w-2/5">Categoría</th>
+                            <th class="pb-2 px-2 w-2/5">Descripción</th>
                             <th class="pb-2 px-2 text-right">Monto</th>
                         </tr>
                     </thead>
@@ -171,33 +187,31 @@
                 <span class="text-lg font-bold text-sky-200/80">Mes seleccionado:</span>
                 <button type="button" onclick="abrirCalendario('mes-filtro', 'mes')" class="bg-[#062836] border border-sky-800 text-lg font-extrabold text-pink-pastel px-4 py-2.5 rounded-2xl flex items-center gap-2">
                     <span id="btn-sel-mes-text">Seleccionar Mes</span>
-                    <span class="text-xl">🗓️</span>
                 </button>
             </div>
 
             <!-- KPIs Mes Filtro -->
-            <div class="grid grid-cols-3 gap-3">
-                <div class="bg-app-input p-4 rounded-2xl text-center border border-sky-900/40 shadow-sm">
-                    <p class="text-xs sm:text-sm text-sky-200/80 font-bold uppercase tracking-wider">Ingresos</p>
-                    <p id="p2-mes-ingresos" class="text-xl sm:text-2xl font-black text-emerald-pastel mt-1">0.00 €</p>
+            <div class="grid grid-cols-3 gap-2 sm:gap-3">
+                <div class="bg-app-input p-2.5 sm:p-4 rounded-2xl text-center border border-sky-900/40 shadow-sm overflow-hidden">
+                    <p class="text-[11px] sm:text-sm text-sky-200/80 font-bold uppercase tracking-wider">Ingresos</p>
+                    <p id="p2-mes-ingresos" class="text-base sm:text-xl font-black text-emerald-pastel mt-1 whitespace-nowrap">0.00 €</p>
                 </div>
-                <div class="bg-app-input p-4 rounded-2xl text-center border border-sky-900/40 shadow-sm">
-                    <p class="text-xs sm:text-sm text-sky-200/80 font-bold uppercase tracking-wider">Gastos</p>
-                    <p id="p2-mes-gastos" class="text-xl sm:text-2xl font-black text-pink-pastel mt-1">0.00 €</p>
+                <div class="bg-app-input p-2.5 sm:p-4 rounded-2xl text-center border border-sky-900/40 shadow-sm overflow-hidden">
+                    <p class="text-[11px] sm:text-sm text-sky-200/80 font-bold uppercase tracking-wider">Gastos</p>
+                    <p id="p2-mes-gastos" class="text-base sm:text-xl font-black text-pink-pastel mt-1 whitespace-nowrap">0.00 €</p>
                 </div>
-                <div class="bg-app-input p-4 rounded-2xl text-center border border-sky-900/40 shadow-sm">
-                    <p class="text-xs sm:text-sm text-sky-200/80 font-bold uppercase tracking-wider">Balance</p>
-                    <p id="p2-mes-balance" class="text-xl sm:text-2xl font-black text-cyan-pastel mt-1">0.00 €</p>
+                <div class="bg-app-input p-2.5 sm:p-4 rounded-2xl text-center border border-sky-900/40 shadow-sm overflow-hidden">
+                    <p class="text-[11px] sm:text-sm text-sky-200/80 font-bold uppercase tracking-wider">Balance</p>
+                    <p id="p2-mes-balance" class="text-base sm:text-xl font-black text-cyan-pastel mt-1 whitespace-nowrap">0.00 €</p>
                 </div>
             </div>
 
             <!-- Botones Vista P2 -->
-            <div class="flex justify-between items-center bg-[#093142] p-2.5 rounded-2xl border border-sky-900/50">
-                <span class="text-lg font-bold text-sky-200/80 ml-2">Detalles del Mes</span>
-                <div class="flex space-x-1.5">
-                    <button id="btn-p2-notis" onclick="cambiarModoVistaP2('notis')" class="px-4 py-2 text-base font-black rounded-xl bg-pink-pastel text-sky-950">Lista</button>
-                    <button id="btn-p2-tabla" onclick="cambiarModoVistaP2('tabla')" class="px-4 py-2 text-base font-extrabold rounded-xl text-sky-200/80">Tabla</button>
-                    <button id="btn-p2-graficos" onclick="cambiarModoVistaP2('graficos')" class="px-4 py-2 text-base font-extrabold rounded-xl text-sky-200/80">Gráficos</button>
+            <div class="bg-[#093142] p-2 rounded-2xl border border-sky-900/50">
+                <div class="flex space-x-2 w-full">
+                    <button id="btn-p2-notis" onclick="cambiarModoVistaP2('notis')" class="flex-1 py-2.5 text-base font-black rounded-xl bg-pink-pastel text-sky-950 text-center transition">Lista</button>
+                    <button id="btn-p2-tabla" onclick="cambiarModoVistaP2('tabla')" class="flex-1 py-2.5 text-base font-extrabold rounded-xl text-sky-200/80 text-center transition">Tabla</button>
+                    <button id="btn-p2-graficos" onclick="cambiarModoVistaP2('graficos')" class="flex-1 py-2.5 text-base font-extrabold rounded-xl text-sky-200/80 text-center transition">Gráficos</button>
                 </div>
             </div>
 
@@ -206,15 +220,14 @@
                 <div id="p2-lista-movs-mes" class="space-y-3"></div>
             </div>
 
-            <!-- P2 Vista Tabla -->
+            <!-- P2 Vista Tabla (Sin columna Tipo) -->
             <div id="p2-vista-tabla" class="hidden bg-app-input rounded-2xl p-4 border border-sky-900/40 overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="text-xs sm:text-sm text-sky-200/60 uppercase border-b border-sky-800/50">
                             <th class="pb-2 px-2">Fecha</th>
-                            <th class="pb-2 px-2">Tipo</th>
-                            <th class="pb-2 px-2">Cat.</th>
-                            <th class="pb-2 px-2">Desc.</th>
+                            <th class="pb-2 px-2 w-2/5">Categoría</th>
+                            <th class="pb-2 px-2 w-2/5">Descripción</th>
                             <th class="pb-2 px-2 text-right">Monto</th>
                         </tr>
                     </thead>
@@ -248,21 +261,21 @@
         <!-- PESTAÑA 3: HISTÓRICO GLOBAL -->
         <section id="tab-historico" class="hidden space-y-6">
             <div class="grid grid-cols-2 gap-3.5">
-                <div class="bg-app-input p-4 rounded-2xl border border-sky-900/40 shadow-sm">
+                <div class="bg-app-input p-4 rounded-2xl text-center border border-sky-900/40 shadow-sm">
                     <p class="text-xs sm:text-sm text-sky-200/80 font-bold uppercase tracking-wider">Total Ingresos</p>
-                    <p id="p3-suma-ingresos" class="text-xl sm:text-2xl font-black text-emerald-pastel mt-1">0.00 €</p>
+                    <p id="p3-suma-ingresos" class="text-xl sm:text-2xl font-black text-emerald-pastel mt-1 whitespace-nowrap">0.00 €</p>
                 </div>
-                <div class="bg-app-input p-4 rounded-2xl border border-sky-900/40 shadow-sm">
+                <div class="bg-app-input p-4 rounded-2xl text-center border border-sky-900/40 shadow-sm">
                     <p class="text-xs sm:text-sm text-sky-200/80 font-bold uppercase tracking-wider">Total Gastos</p>
-                    <p id="p3-suma-gastos" class="text-xl sm:text-2xl font-black text-pink-pastel mt-1">0.00 €</p>
+                    <p id="p3-suma-gastos" class="text-xl sm:text-2xl font-black text-pink-pastel mt-1 whitespace-nowrap">0.00 €</p>
                 </div>
-                <div class="bg-app-input p-4 rounded-2xl border border-sky-900/40 shadow-sm">
+                <div class="bg-app-input p-4 rounded-2xl text-center border border-sky-900/40 shadow-sm">
                     <p class="text-xs sm:text-sm text-sky-200/80 font-bold uppercase tracking-wider">Balance Global</p>
-                    <p id="p3-balance-global" class="text-xl sm:text-2xl font-black text-cyan-pastel mt-1">0.00 €</p>
+                    <p id="p3-balance-global" class="text-xl sm:text-2xl font-black text-cyan-pastel mt-1 whitespace-nowrap">0.00 €</p>
                 </div>
-                <div class="bg-app-input p-4 rounded-2xl border border-sky-900/40 shadow-sm">
+                <div class="bg-app-input p-4 rounded-2xl text-center border border-sky-900/40 shadow-sm">
                     <p class="text-xs sm:text-sm text-sky-200/80 font-bold uppercase tracking-wider">Saldo Actual</p>
-                    <p id="p3-saldo-actual" class="text-xl sm:text-2xl font-black text-white mt-1">0.00 €</p>
+                    <p id="p3-saldo-actual" class="text-xl sm:text-2xl font-black text-white mt-1 whitespace-nowrap">0.00 €</p>
                 </div>
             </div>
 
@@ -312,20 +325,22 @@
         </div>
     </div>
 
-    <!-- NAVBAR INFERIOR -->
-    <nav class="fixed bottom-0 inset-x-0 bg-[#093142] border-t border-sky-900/60 p-4 flex justify-around items-center z-20 shadow-2xl">
-        <button id="nav-inicio" onclick="cambiarPestana('inicio')" class="flex flex-col items-center text-pink-pastel">
-            <span class="text-3xl">🏠</span>
-            <span class="text-base font-extrabold mt-1">Inicio</span>
-        </button>
-        <button id="nav-mes" onclick="cambiarPestana('mes')" class="flex flex-col items-center text-sky-200/50">
-            <span class="text-3xl">📅</span>
-            <span class="text-base font-extrabold mt-1">Mes</span>
-        </button>
-        <button id="nav-historico" onclick="cambiarPestana('historico')" class="flex flex-col items-center text-sky-200/50">
-            <span class="text-3xl">📊</span>
-            <span class="text-base font-extrabold mt-1">Histórico</span>
-        </button>
+    <!-- NAVBAR INFERIOR (Centrado geométrico perfecto) -->
+    <nav class="fixed bottom-0 inset-x-0 bg-[#093142] border-t border-sky-900/60 z-20 shadow-2xl pb-4">
+        <div class="max-w-xl mx-auto grid grid-cols-3 pt-3">
+            <button id="nav-inicio" onclick="cambiarPestana('inicio')" class="flex flex-col items-center justify-center w-full text-pink-pastel">
+                <span class="text-3xl">🏠</span>
+                <span class="text-base font-extrabold mt-1">Inicio</span>
+            </button>
+            <button id="nav-mes" onclick="cambiarPestana('mes')" class="flex flex-col items-center justify-center w-full text-sky-200/50">
+                <span class="text-3xl">📅</span>
+                <span class="text-base font-extrabold mt-1">Mes</span>
+            </button>
+            <button id="nav-historico" onclick="cambiarPestana('historico')" class="flex flex-col items-center justify-center w-full text-sky-200/50">
+                <span class="text-3xl">📊</span>
+                <span class="text-base font-extrabold mt-1">Histórico</span>
+            </button>
+        </div>
     </nav>
 
     <!-- SCRIPT LÓGICA COMPLETA -->
@@ -365,6 +380,42 @@
         let calMes = 8;
         let calModo = 'dia';
         let calTarget = 'form';
+
+        // DESPLEGABLES PERSONALIZADOS
+        function toggleDropdownTipo() {
+            document.getElementById('opts-tipo-mov').classList.toggle('hidden');
+            document.getElementById('opts-categoria').classList.add('hidden');
+        }
+
+        function seleccionarTipo(val, label) {
+            document.getElementById('sel-tipo-mov').value = val;
+            document.getElementById('lbl-tipo-mov').innerText = label;
+            document.getElementById('opts-tipo-mov').classList.add('hidden');
+        }
+
+        function toggleDropdownCat() {
+            document.getElementById('opts-categoria').classList.toggle('hidden');
+            document.getElementById('opts-tipo-mov').classList.add('hidden');
+        }
+
+        function seleccionarCategoria(val, label) {
+            document.getElementById('sel-categoria').value = val;
+            const lbl = document.getElementById('lbl-categoria');
+            lbl.innerText = label;
+            lbl.classList.remove('text-sky-200/50');
+            lbl.classList.add('text-white');
+            document.getElementById('opts-categoria').classList.add('hidden');
+        }
+
+        // Cierra los desplegables si se hace clic fuera
+        window.addEventListener('click', function(e) {
+            if (!document.getElementById('dropdown-tipo-container')?.contains(e.target)) {
+                document.getElementById('opts-tipo-mov')?.classList.add('hidden');
+            }
+            if (!document.getElementById('dropdown-cat-container')?.contains(e.target)) {
+                document.getElementById('opts-categoria')?.classList.add('hidden');
+            }
+        });
 
         function toggleCategorias() {
             const cont = document.getElementById('cat-contenido');
@@ -447,10 +498,10 @@
         function cambiarPestana(p) {
             ['inicio', 'mes', 'historico'].forEach(tab => {
                 document.getElementById(`tab-${tab}`).classList.add('hidden');
-                document.getElementById(`nav-${tab}`).className = 'flex flex-col items-center text-sky-200/50';
+                document.getElementById(`nav-${tab}`).className = 'flex flex-col items-center justify-center w-full text-sky-200/50';
             });
             document.getElementById(`tab-${p}`).classList.remove('hidden');
-            document.getElementById(`nav-${p}`).className = 'flex flex-col items-center text-pink-pastel';
+            document.getElementById(`nav-${p}`).className = 'flex flex-col items-center justify-center w-full text-pink-pastel';
 
             if (p === 'mes') cargarDetalleMes();
             if (p === 'historico') cargarPantallaHistorico();
@@ -459,10 +510,10 @@
         function cambiarModoVistaP1(v) {
             ['notis', 'tabla', 'graficos'].forEach(m => {
                 document.getElementById(`p1-vista-${m}`).classList.add('hidden');
-                document.getElementById(`btn-p1-${m}`).className = 'px-4 py-2 text-base font-extrabold rounded-xl text-sky-200/80';
+                document.getElementById(`btn-p1-${m}`).className = 'flex-1 py-2.5 text-base font-extrabold rounded-xl text-sky-200/80 text-center transition';
             });
             document.getElementById(`p1-vista-${v}`).classList.remove('hidden');
-            document.getElementById(`btn-p1-${v}`).className = 'px-4 py-2 text-base font-black rounded-xl bg-pink-pastel text-sky-950';
+            document.getElementById(`btn-p1-${v}`).className = 'flex-1 py-2.5 text-base font-black rounded-xl bg-pink-pastel text-sky-950 text-center transition';
 
             if (v === 'graficos') renderGraficoP1BalanceNeto();
         }
@@ -470,10 +521,10 @@
         function cambiarModoVistaP2(v) {
             ['notis', 'tabla', 'graficos'].forEach(m => {
                 document.getElementById(`p2-vista-${m}`).classList.add('hidden');
-                document.getElementById(`btn-p2-${m}`).className = 'px-4 py-2 text-base font-extrabold rounded-xl text-sky-200/80';
+                document.getElementById(`btn-p2-${m}`).className = 'flex-1 py-2.5 text-base font-extrabold rounded-xl text-sky-200/80 text-center transition';
             });
             document.getElementById(`p2-vista-${v}`).classList.remove('hidden');
-            document.getElementById(`btn-p2-${v}`).className = 'px-4 py-2 text-base font-black rounded-xl bg-pink-pastel text-sky-950';
+            document.getElementById(`btn-p2-${v}`).className = 'flex-1 py-2.5 text-base font-black rounded-xl bg-pink-pastel text-sky-950 text-center transition';
 
             if (v === 'graficos') renderGraficosP2();
         }
@@ -494,17 +545,22 @@
                 const res = await fetch(`${API_URL}/categories/`);
                 categoriasBD = await res.json();
                 
-                const select = document.getElementById('sel-categoria');
                 const tagBox = document.getElementById('lista-tags-cat');
+                const optsCat = document.getElementById('opts-categoria');
                 
-                select.innerHTML = '<option value="">Selecciona una categoría</option>';
                 tagBox.innerHTML = '';
+                optsCat.innerHTML = '';
 
                 categoriasBD.forEach(cat => {
                     const emoji = obtenerEmoji(cat.name);
                     const nombreLimpio = obtenerNombreLimpio(cat.name);
                     
-                    select.innerHTML += `<option value="${cat.name}">${emoji} ${nombreLimpio}</option>`;
+                    const btnOpt = document.createElement('button');
+                    btnOpt.type = 'button';
+                    btnOpt.className = 'w-full text-left px-4 py-3 font-bold text-sky-100 hover:bg-sky-900/60 transition rounded-xl flex items-center gap-2.5';
+                    btnOpt.innerHTML = `<span class="text-lg">${emoji}</span> <span>${nombreLimpio}</span>`;
+                    btnOpt.onclick = () => seleccionarCategoria(cat.name, `${emoji} ${nombreLimpio}`);
+                    optsCat.appendChild(btnOpt);
                     
                     const tag = document.createElement('div');
                     tag.className = "text-base px-3.5 py-2 rounded-2xl bg-[#062836] border border-sky-700/80 text-sky-100 font-bold flex items-center gap-2.5 shadow-sm";
@@ -586,7 +642,7 @@
                             </div>
                         </div>
                     </div>
-                    <span class="font-extrabold text-xl ${esIngreso ? 'text-emerald-pastel' : 'text-pink-pastel'}">
+                    <span class="font-extrabold text-xl ${esIngreso ? 'text-emerald-pastel' : 'text-pink-pastel'} whitespace-nowrap">
                         ${esIngreso ? '+' : '-'}${Number(tx.amount).toFixed(2)} €
                     </span>
                 `;
@@ -615,11 +671,10 @@
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td class="py-3 px-2 text-sky-200/80 text-base font-semibold">${new Date(tx.date).toLocaleDateString('es-ES')}</td>
-                    <td class="py-3 px-2"><span class="text-xs sm:text-sm uppercase font-bold px-2.5 py-1 rounded-full ${esIngreso ? 'bg-emerald-pastel-subtle text-emerald-pastel' : 'bg-pink-pastel-subtle text-pink-pastel'}">${esIngreso ? 'Ingreso' : 'Gasto'}</span></td>
+                    <td class="py-3 px-2 text-sky-200/80 text-base font-semibold whitespace-nowrap">${new Date(tx.date).toLocaleDateString('es-ES')}</td>
                     <td class="py-3 px-2 font-bold text-sky-100 text-base">${emoji} ${nombreLimpio}</td>
                     <td class="py-3 px-2 text-sky-200/80 text-base">${tx.description || '-'}</td>
-                    <td class="py-3 px-2 text-right font-extrabold text-base sm:text-lg ${esIngreso ? 'text-emerald-pastel' : 'text-pink-pastel'}">${esIngreso ? '+' : '-'}${Number(tx.amount).toFixed(2)} €</td>
+                    <td class="py-3 px-2 text-right font-extrabold text-base sm:text-lg ${esIngreso ? 'text-emerald-pastel' : 'text-pink-pastel'} whitespace-nowrap">${esIngreso ? '+' : '-'}${Number(tx.amount).toFixed(2)} €</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -654,27 +709,30 @@
                     datasets: [{
                         data: data,
                         backgroundColor: bgColors,
-                        borderRadius: 12,
-                        barThickness: 42
+                        borderRadius: 10,
+                        barThickness: 34
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: {
+                        padding: { top: 25, bottom: 20 }
+                    },
                     plugins: {
                         legend: { display: false },
                         datalabels: {
                             color: '#ffffff',
                             anchor: (ctx) => ctx.dataset.data[ctx.dataIndex] < 0 ? 'start' : 'end',
-                            align: 'top',
-                            offset: 4,
-                            font: { family: 'Nunito', size: 14, weight: 'bold' },
+                            align: (ctx) => ctx.dataset.data[ctx.dataIndex] < 0 ? 'bottom' : 'top',
+                            offset: 3,
+                            font: { family: 'Nunito', size: 10, weight: 'bold' },
                             formatter: (val) => (val >= 0 ? '+' : '') + val.toFixed(2) + ' €'
                         }
                     },
                     scales: {
-                        x: { ticks: { color: '#e2e8f0', font: { family: 'Nunito', size: 18 } }, grid: { display: false } },
-                        y: { ticks: { color: '#82c8ec', font: { family: 'Nunito' } }, grid: { display: false } }
+                        x: { ticks: { color: '#e2e8f0', font: { family: 'Nunito', size: 16 } }, grid: { display: false } },
+                        y: { ticks: { color: '#82c8ec', font: { family: 'Nunito', size: 11 } }, grid: { display: false }, grace: '20%' }
                     }
                 }
             });
@@ -721,17 +779,16 @@
                                 </div>
                             </div>
                         </div>
-                        <span class="font-extrabold text-xl ${esIngreso ? 'text-emerald-pastel' : 'text-pink-pastel'}">${esIngreso ? '+' : '-'}${Number(tx.amount).toFixed(2)} €</span>
+                        <span class="font-extrabold text-xl ${esIngreso ? 'text-emerald-pastel' : 'text-pink-pastel'} whitespace-nowrap">${esIngreso ? '+' : '-'}${Number(tx.amount).toFixed(2)} €</span>
                     </div>
                 `;
 
                 tbody.innerHTML += `
                     <tr>
-                        <td class="py-3 px-2 text-sky-200/80 text-base font-semibold">${new Date(tx.date).toLocaleDateString('es-ES')}</td>
-                        <td class="py-3 px-2"><span class="text-xs sm:text-sm uppercase font-bold px-2.5 py-1 rounded-full ${esIngreso ? 'bg-emerald-pastel-subtle text-emerald-pastel' : 'bg-pink-pastel-subtle text-pink-pastel'}">${esIngreso ? 'Ingreso' : 'Gasto'}</span></td>
+                        <td class="py-3 px-2 text-sky-200/80 text-base font-semibold whitespace-nowrap">${new Date(tx.date).toLocaleDateString('es-ES')}</td>
                         <td class="py-3 px-2 font-bold text-sky-100 text-base">${emoji} ${nombreLimpio}</td>
                         <td class="py-3 px-2 text-sky-200/80 text-base">${tx.description || '-'}</td>
-                        <td class="py-3 px-2 text-right font-extrabold text-base sm:text-lg ${esIngreso ? 'text-emerald-pastel' : 'text-pink-pastel'}">${esIngreso ? '+' : '-'}${Number(tx.amount).toFixed(2)} €</td>
+                        <td class="py-3 px-2 text-right font-extrabold text-base sm:text-lg ${esIngreso ? 'text-emerald-pastel' : 'text-pink-pastel'} whitespace-nowrap">${esIngreso ? '+' : '-'}${Number(tx.amount).toFixed(2)} €</td>
                     </tr>
                 `;
             });
@@ -771,27 +828,30 @@
                     datasets: [{
                         data: dataP2,
                         backgroundColor: bgColorsP2,
-                        borderRadius: 12,
-                        barThickness: 42
+                        borderRadius: 10,
+                        barThickness: 34
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: {
+                        padding: { top: 25, bottom: 20 }
+                    },
                     plugins: {
                         legend: { display: false },
                         datalabels: {
                             color: '#ffffff',
                             anchor: (ctx) => ctx.dataset.data[ctx.dataIndex] < 0 ? 'start' : 'end',
-                            align: 'top',
-                            offset: 4,
-                            font: { family: 'Nunito', size: 14, weight: 'bold' },
+                            align: (ctx) => ctx.dataset.data[ctx.dataIndex] < 0 ? 'bottom' : 'top',
+                            offset: 3,
+                            font: { family: 'Nunito', size: 10, weight: 'bold' },
                             formatter: (val) => (val >= 0 ? '+' : '') + val.toFixed(2) + ' €'
                         }
                     },
                     scales: {
-                        x: { ticks: { color: '#e2e8f0', font: { family: 'Nunito', size: 18 } }, grid: { display: false } },
-                        y: { ticks: { color: '#82c8ec', font: { family: 'Nunito' } }, grid: { display: false } }
+                        x: { ticks: { color: '#e2e8f0', font: { family: 'Nunito', size: 16 } }, grid: { display: false } },
+                        y: { ticks: { color: '#82c8ec', font: { family: 'Nunito', size: 11 } }, grid: { display: false }, grace: '20%' }
                     }
                 }
             });
@@ -812,23 +872,24 @@
                 type: 'bar',
                 data: {
                     labels: Object.keys(gastos),
-                    datasets: [{ data: Object.values(gastos), backgroundColor: '#ffcdd4', borderRadius: 10, barThickness: 42 }]
+                    datasets: [{ data: Object.values(gastos), backgroundColor: '#ffcdd4', borderRadius: 10, barThickness: 34 }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: { padding: { top: 25 } },
                     plugins: {
                         legend: { display: false },
                         datalabels: {
                             color: '#ffffff',
                             anchor: 'end',
                             align: 'top',
-                            offset: 4,
-                            font: { family: 'Nunito', size: 14, weight: 'bold' },
+                            offset: 3,
+                            font: { family: 'Nunito', size: 10, weight: 'bold' },
                             formatter: v => `-${v.toFixed(2)}€`
                         }
                     },
-                    scales: { x: { ticks: { font: { size: 18 } }, grid: { display: false } }, y: { ticks: { color: '#82c8ec' }, grid: { display: false } } }
+                    scales: { x: { ticks: { font: { size: 16 } }, grid: { display: false } }, y: { ticks: { color: '#82c8ec', font: { size: 11 } }, grid: { display: false }, grace: '20%' } }
                 }
             });
 
@@ -848,23 +909,24 @@
                 type: 'bar',
                 data: {
                     labels: Object.keys(ingresos),
-                    datasets: [{ data: Object.values(ingresos), backgroundColor: '#a7f3d0', borderRadius: 10, barThickness: 42 }]
+                    datasets: [{ data: Object.values(ingresos), backgroundColor: '#a7f3d0', borderRadius: 10, barThickness: 34 }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: { padding: { top: 25 } },
                     plugins: {
                         legend: { display: false },
                         datalabels: {
                             color: '#ffffff',
                             anchor: 'end',
                             align: 'top',
-                            offset: 4,
-                            font: { family: 'Nunito', size: 14, weight: 'bold' },
+                            offset: 3,
+                            font: { family: 'Nunito', size: 10, weight: 'bold' },
                             formatter: v => `+${v.toFixed(2)}€`
                         }
                     },
-                    scales: { x: { ticks: { font: { size: 18 } }, grid: { display: false } }, y: { ticks: { color: '#82c8ec' }, grid: { display: false } } }
+                    scales: { x: { ticks: { font: { size: 16 } }, grid: { display: false } }, y: { ticks: { color: '#82c8ec', font: { size: 11 } }, grid: { display: false }, grace: '20%' } }
                 }
             });
         }
@@ -923,26 +985,29 @@
                         data: data,
                         backgroundColor: bgColors,
                         borderRadius: 10,
-                        barThickness: 42
+                        barThickness: 34
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: {
+                        padding: { top: 25, bottom: 20 }
+                    },
                     plugins: {
                         legend: { display: false },
                         datalabels: {
                             color: '#ffffff',
                             anchor: (ctx) => ctx.dataset.data[ctx.dataIndex] < 0 ? 'start' : 'end',
-                            align: 'top',
-                            offset: 4,
-                            font: { family: 'Nunito', size: 14, weight: 'bold' },
+                            align: (ctx) => ctx.dataset.data[ctx.dataIndex] < 0 ? 'bottom' : 'top',
+                            offset: 3,
+                            font: { family: 'Nunito', size: 10, weight: 'bold' },
                             formatter: (val) => (val >= 0 ? '+' : '') + val.toFixed(2) + ' €'
                         }
                     },
                     scales: {
-                        x: { ticks: { color: '#e2e8f0', font: { family: 'Nunito', size: 18 } }, grid: { display: false } },
-                        y: { ticks: { color: '#82c8ec', font: { family: 'Nunito' } }, grid: { display: false } }
+                        x: { ticks: { color: '#e2e8f0', font: { family: 'Nunito', size: 16 } }, grid: { display: false } },
+                        y: { ticks: { color: '#82c8ec', font: { family: 'Nunito', size: 11 } }, grid: { display: false }, grace: '20%' }
                     }
                 }
             });
@@ -966,14 +1031,14 @@
                                 data: history.map(h => h.income),
                                 backgroundColor: '#a7f3d0',
                                 borderRadius: 10,
-                                maxBarThickness: 32
+                                maxBarThickness: 28
                             },
                             {
                                 label: 'Gastos (€)',
                                 data: history.map(h => h.expense),
                                 backgroundColor: '#ffcdd4',
                                 borderRadius: 10,
-                                maxBarThickness: 32
+                                maxBarThickness: 28
                             }
                         ]
                     },
@@ -992,8 +1057,8 @@
                                 color: '#ffffff',
                                 anchor: 'end',
                                 align: 'top',
-                                offset: 4,
-                                font: { family: 'Nunito', size: 13, weight: 'bold' },
+                                offset: 3,
+                                font: { family: 'Nunito', size: 10, weight: 'bold' },
                                 formatter: (val) => val > 0 ? `${val.toFixed(2)} €` : ''
                             }
                         },
@@ -1003,9 +1068,9 @@
                                 grid: { display: false }
                             },
                             y: {
-                                ticks: { color: '#82c8ec', font: { family: 'Nunito' } },
+                                ticks: { color: '#82c8ec', font: { family: 'Nunito', size: 11 } },
                                 grid: { display: false },
-                                grace: '15%'
+                                grace: '20%'
                             }
                         }
                     }
@@ -1165,6 +1230,13 @@
             const nombreCat = document.getElementById('sel-categoria').value;
             const desc = document.getElementById('inp-desc').value;
 
+            if (!nombreCat) {
+                alert("Por favor selecciona una categoría.");
+                btn.disabled = false;
+                btn.innerText = "Guardar Movimiento";
+                return;
+            }
+
             try {
                 let catMatch = categoriasBD.find(c => c.name.toLowerCase() === nombreCat.toLowerCase());
 
@@ -1191,6 +1263,12 @@
 
                 if (resTx.ok) {
                     document.getElementById('form-movimiento').reset();
+                    document.getElementById('sel-categoria').value = '';
+                    document.getElementById('lbl-categoria').innerText = 'Seleccionar';
+                    document.getElementById('lbl-categoria').className = 'text-sky-200/50 truncate';
+                    document.getElementById('sel-tipo-mov').value = 'gasto';
+                    document.getElementById('lbl-tipo-mov').innerText = 'Gasto';
+
                     establecerFechaHoyDefault();
                     await cargarTodo();
                 }
