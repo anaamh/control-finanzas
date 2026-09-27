@@ -1,11 +1,10 @@
 import os
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import List, Optional, Union
 from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from sqlmodel import SQLModel, Field, Session, create_engine, select
+from sqlmodel import SQLModel, Field, Session, create_engine, select, text
 
 # --- CONEXIÓN A BASE DE DATOS EN LA NUBE (SUPABASE / RENDER) ---
 DATABASE_URL = os.getenv(
@@ -16,8 +15,13 @@ DATABASE_URL = os.getenv(
 # Motor de base de datos listo para PostgreSQL en la nube
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
+
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
+    # Migración automática: añade la columna 'type' si no existe en la base de datos
+    with Session(engine) as session:
+        session.exec(text('ALTER TABLE "transaction" ADD COLUMN IF NOT EXISTS type VARCHAR DEFAULT \'gasto\';'))
+        session.commit()
 
 
 def get_session():
@@ -37,6 +41,7 @@ class Transaction(SQLModel, table=True):
     amount: float
     description: Optional[str] = None
     category_id: int = Field(foreign_key="category.id")
+    type: str = Field(default="gasto")
     date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -50,6 +55,7 @@ class TransactionCreate(SQLModel):
     amount: float
     description: Optional[str] = None
     category_id: int
+    type: Optional[str] = "gasto"
     date: Optional[Union[datetime, str]] = None
 
 
@@ -110,7 +116,7 @@ def create_transaction(transaction: TransactionCreate, session: Session = Depend
     if not category:
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
     
-    # Convierte la fecha recibida y le asigna la zona horaria UTC
+    # Convierte la fecha recibida y asigna zona horaria UTC
     parsed_date = datetime.now(timezone.utc)
     if transaction.date:
         if isinstance(transaction.date, datetime):
@@ -124,15 +130,17 @@ def create_transaction(transaction: TransactionCreate, session: Session = Depend
                 except ValueError:
                     parsed_date = datetime.now(timezone.utc)
 
-    # Si la fecha no tiene zona horaria, se le fuerza UTC para Supabase
     if parsed_date.tzinfo is None:
         parsed_date = parsed_date.replace(tzinfo=timezone.utc)
+
+    tx_type = (transaction.type or "gasto").lower().strip()
 
     try:
         db_transaction = Transaction(
             amount=float(transaction.amount),
             description=transaction.description,
             category_id=transaction.category_id,
+            type=tx_type,
             date=parsed_date
         )
         session.add(db_transaction)
@@ -158,9 +166,10 @@ def get_balance_summary(session: Session = Depends(get_session)):
     total_expense = 0.0
     
     for tx, cat in transactions:
-        if cat.type.lower() == "ingreso":
+        tx_type = (getattr(tx, "type", None) or cat.type or "gasto").lower().strip()
+        if tx_type == "ingreso":
             total_income += tx.amount
-        elif cat.type.lower() == "gasto":
+        else:
             total_expense += tx.amount
 
     return {
@@ -182,9 +191,10 @@ def get_monthly_history(session: Session = Depends(get_session)):
         if period not in monthly_data:
             monthly_data[period] = {"income": 0.0, "expense": 0.0}
         
-        if cat.type.lower() == "ingreso":
+        tx_type = (getattr(tx, "type", None) or cat.type or "gasto").lower().strip()
+        if tx_type == "ingreso":
             monthly_data[period]["income"] += tx.amount
-        elif cat.type.lower() == "gasto":
+        else:
             monthly_data[period]["expense"] += tx.amount
             
     sorted_periods = sorted(monthly_data.keys())
