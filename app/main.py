@@ -50,25 +50,36 @@ class TransactionCreate(SQLModel):
     amount: float
     description: Optional[str] = None
     category_id: int
+    type: Optional[str] = None
     date: Optional[Union[datetime, str]] = None
 
 
-# --- CLASIFICADOR FLEXIBLE DE INGRESOS ---
-def is_income(category: Optional[Category]) -> bool:
-    if not category:
-        return False
-    
-    # 1. Comprobación por tipo de categoría (soporta "ingreso", "ingresos", "income", "ganancia", etc.)
-    cat_type = (category.type or "").strip().lower()
-    if any(k in cat_type for k in ["ingres", "incom", "gananc", "cobro"]):
-        return True
-        
-    # 2. Comprobación por nombre de categoría si el tipo estuviera mal guardado
-    cat_name = (category.name or "").strip().lower()
-    if any(k in cat_name for k in ["sueldo", "nomina", "nómina", "ingres", "cobro", "ventas", "venta"]):
-        return True
-        
-    return False
+# --- DETERMINADOR PRECISO DE TIPO ---
+def determine_type(tx_type_param: Optional[str], category: Optional[Category]) -> str:
+    # 1. Prioridad: Tipo enviado directamente en el envío del formulario
+    if tx_type_param and tx_type_param.strip():
+        t = tx_type_param.strip().lower()
+        if "ingres" in t or "income" in t:
+            return "ingreso"
+        if "gast" in t or "egres" in t or "expense" in t:
+            return "gasto"
+
+    # 2. Prioridad: Tipo definido en la categoría asociada
+    if category and category.type:
+        cat_type = category.type.strip().lower()
+        if "gast" in cat_type or "egres" in cat_type or "expense" in cat_type:
+            return "gasto"
+        if "ingres" in cat_type or "income" in cat_type or "gananc" in cat_type:
+            return "ingreso"
+
+    # 3. Prioridad: Nombre de la categoría (regla de respaldo para datos antiguos)
+    if category and category.name:
+        cat_name = category.name.strip().lower()
+        if any(w in cat_name for w in ["sueldo", "nomina", "nómina", "ingreso", "cobro", "ventas", "venta"]):
+            return "ingreso"
+
+    # 4. Por defecto: Todo movimiento no clasificado es GASTO
+    return "gasto"
 
 
 # --- APLICACIÓN FASTAPI ---
@@ -155,7 +166,7 @@ def create_transaction(transaction: TransactionCreate, session: Session = Depend
         session.commit()
         session.refresh(db_transaction)
 
-        tx_type = "ingreso" if is_income(category) else "gasto"
+        tx_type = determine_type(transaction.type, category)
         return {
             "id": db_transaction.id,
             "amount": db_transaction.amount,
@@ -179,7 +190,7 @@ def read_transactions(session: Session = Depends(get_session)):
     output = []
     for tx in txs:
         cat = cat_map.get(tx.category_id)
-        tx_type = "ingreso" if is_income(cat) else "gasto"
+        tx_type = determine_type(None, cat)
         output.append({
             "id": tx.id,
             "amount": tx.amount,
@@ -205,7 +216,7 @@ def get_balance_summary(session: Session = Depends(get_session)):
     for tx in txs:
         cat = cat_map.get(tx.category_id)
         amt = abs(tx.amount)
-        if is_income(cat):
+        if determine_type(None, cat) == "ingreso":
             total_income += amt
         else:
             total_expense += amt
@@ -234,7 +245,7 @@ def get_monthly_history(session: Session = Depends(get_session)):
         
         cat = cat_map.get(tx.category_id)
         amt = abs(tx.amount)
-        if is_income(cat):
+        if determine_type(None, cat) == "ingreso":
             monthly_data[period]["income"] += amt
         else:
             monthly_data[period]["expense"] += amt
