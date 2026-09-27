@@ -4,7 +4,7 @@ from typing import List, Optional, Union
 from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from sqlmodel import SQLModel, Field, Session, create_engine, select, text
+from sqlmodel import SQLModel, Field, Session, create_engine, select
 
 # --- CONEXIÓN A BASE DE DATOS EN LA NUBE (SUPABASE / RENDER) ---
 DATABASE_URL = os.getenv(
@@ -18,10 +18,6 @@ engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
-    # Migración automática: añade la columna 'type' si no existe en la base de datos
-    with Session(engine) as session:
-        session.exec(text('ALTER TABLE "transaction" ADD COLUMN IF NOT EXISTS type VARCHAR DEFAULT \'gasto\';'))
-        session.commit()
 
 
 def get_session():
@@ -29,7 +25,7 @@ def get_session():
         yield session
 
 
-# --- MODELOS DE DATOS ---
+# --- MODELOS DE DATOS (BASE DE DATOS INTACTA) ---
 class Category(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str
@@ -41,7 +37,6 @@ class Transaction(SQLModel, table=True):
     amount: float
     description: Optional[str] = None
     category_id: int = Field(foreign_key="category.id")
-    type: str = Field(default="gasto")
     date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -55,8 +50,25 @@ class TransactionCreate(SQLModel):
     amount: float
     description: Optional[str] = None
     category_id: int
-    type: Optional[str] = "gasto"
     date: Optional[Union[datetime, str]] = None
+
+
+# --- CLASIFICADOR FLEXIBLE DE INGRESOS ---
+def is_income(category: Optional[Category]) -> bool:
+    if not category:
+        return False
+    
+    # 1. Comprobación por tipo de categoría (soporta "ingreso", "ingresos", "income", "ganancia", etc.)
+    cat_type = (category.type or "").strip().lower()
+    if any(k in cat_type for k in ["ingres", "incom", "gananc", "cobro"]):
+        return True
+        
+    # 2. Comprobación por nombre de categoría si el tipo estuviera mal guardado
+    cat_name = (category.name or "").strip().lower()
+    if any(k in cat_name for k in ["sueldo", "nomina", "nómina", "ingres", "cobro", "ventas", "venta"]):
+        return True
+        
+    return False
 
 
 # --- APLICACIÓN FASTAPI ---
@@ -94,7 +106,7 @@ def create_category(category: CategoryCreate, session: Session = Depends(get_ses
         if existing:
             return existing
 
-        db_category = Category(name=category.name.strip(), type=category.type.lower())
+        db_category = Category(name=category.name.strip(), type=category.type.lower().strip())
         session.add(db_category)
         session.commit()
         session.refresh(db_category)
@@ -110,13 +122,12 @@ def read_categories(session: Session = Depends(get_session)):
 
 
 # --- ENDPOINTS DE TRANSACCIONES ---
-@app.post("/transactions/", response_model=Transaction)
+@app.post("/transactions/")
 def create_transaction(transaction: TransactionCreate, session: Session = Depends(get_session)):
     category = session.get(Category, transaction.category_id)
     if not category:
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
     
-    # Convierte la fecha recibida y asigna zona horaria UTC
     parsed_date = datetime.now(timezone.utc)
     if transaction.date:
         if isinstance(transaction.date, datetime):
@@ -133,44 +144,71 @@ def create_transaction(transaction: TransactionCreate, session: Session = Depend
     if parsed_date.tzinfo is None:
         parsed_date = parsed_date.replace(tzinfo=timezone.utc)
 
-    tx_type = (transaction.type or "gasto").lower().strip()
-
     try:
         db_transaction = Transaction(
             amount=float(transaction.amount),
             description=transaction.description,
             category_id=transaction.category_id,
-            type=tx_type,
             date=parsed_date
         )
         session.add(db_transaction)
         session.commit()
         session.refresh(db_transaction)
-        return db_transaction
+
+        tx_type = "ingreso" if is_income(category) else "gasto"
+        return {
+            "id": db_transaction.id,
+            "amount": db_transaction.amount,
+            "description": db_transaction.description,
+            "category_id": db_transaction.category_id,
+            "date": db_transaction.date,
+            "type": tx_type,
+            "category_name": category.name
+        }
     except Exception as e:
         session.rollback()
         raise HTTPException(status_code=500, detail=f"Error al guardar la transacción: {str(e)}")
 
 
-@app.get("/transactions/", response_model=List[Transaction])
+@app.get("/transactions/")
 def read_transactions(session: Session = Depends(get_session)):
-    return session.exec(select(Transaction).order_by(Transaction.date.desc())).all()
+    txs = session.exec(select(Transaction).order_by(Transaction.date.desc())).all()
+    cats = session.exec(select(Category)).all()
+    cat_map = {c.id: c for c in cats if c.id is not None}
+
+    output = []
+    for tx in txs:
+        cat = cat_map.get(tx.category_id)
+        tx_type = "ingreso" if is_income(cat) else "gasto"
+        output.append({
+            "id": tx.id,
+            "amount": tx.amount,
+            "description": tx.description,
+            "category_id": tx.category_id,
+            "date": tx.date,
+            "type": tx_type,
+            "category_name": cat.name if cat else "Sin categoría"
+        })
+    return output
 
 
 # --- ENDPOINTS DE RESUMEN Y ESTADÍSTICAS ---
 @app.get("/summary/balance")
 def get_balance_summary(session: Session = Depends(get_session)):
-    transactions = session.exec(select(Transaction, Category).where(Transaction.category_id == Category.id)).all()
+    txs = session.exec(select(Transaction)).all()
+    cats = session.exec(select(Category)).all()
+    cat_map = {c.id: c for c in cats if c.id is not None}
     
     total_income = 0.0
     total_expense = 0.0
     
-    for tx, cat in transactions:
-        tx_type = (getattr(tx, "type", None) or cat.type or "gasto").lower().strip()
-        if tx_type == "ingreso":
-            total_income += tx.amount
+    for tx in txs:
+        cat = cat_map.get(tx.category_id)
+        amt = abs(tx.amount)
+        if is_income(cat):
+            total_income += amt
         else:
-            total_expense += tx.amount
+            total_expense += amt
 
     return {
         "total_income": total_income,
@@ -181,21 +219,25 @@ def get_balance_summary(session: Session = Depends(get_session)):
 
 @app.get("/summary/monthly-history")
 def get_monthly_history(session: Session = Depends(get_session)):
-    transactions = session.exec(select(Transaction, Category).where(Transaction.category_id == Category.id)).all()
-    if not transactions:
+    txs = session.exec(select(Transaction)).all()
+    if not txs:
         return []
     
+    cats = session.exec(select(Category)).all()
+    cat_map = {c.id: c for c in cats if c.id is not None}
+    
     monthly_data = {}
-    for tx, cat in transactions:
+    for tx in txs:
         period = tx.date.strftime("%Y-%m")
         if period not in monthly_data:
             monthly_data[period] = {"income": 0.0, "expense": 0.0}
         
-        tx_type = (getattr(tx, "type", None) or cat.type or "gasto").lower().strip()
-        if tx_type == "ingreso":
-            monthly_data[period]["income"] += tx.amount
+        cat = cat_map.get(tx.category_id)
+        amt = abs(tx.amount)
+        if is_income(cat):
+            monthly_data[period]["income"] += amt
         else:
-            monthly_data[period]["expense"] += tx.amount
+            monthly_data[period]["expense"] += amt
             
     sorted_periods = sorted(monthly_data.keys())
     history = []
@@ -240,8 +282,8 @@ def get_monthly_comparison(session: Session = Depends(get_session)):
     inc_diff = curr["income"] - prev["income"]
     exp_diff = curr["expense"] - prev["expense"]
     
-    inc_pct = round((inc_diff / prev["income"]) * 100, 2) if prev["income"] > 0 else None
-    exp_pct = round((exp_diff / prev["expense"]) * 100, 2) if prev["expense"] > 0 else None
+    inc_pct = round((inc_diff / prev["income"]) * 100, 2) if prev.get("income", 0) > 0 else None
+    exp_pct = round((exp_diff / prev["expense"]) * 100, 2) if prev.get("expense", 0) > 0 else None
     
     return {
         "current_month": curr,
