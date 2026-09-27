@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+sqlmodel
+psycopg2-binary
+pydantic
+streamlit
+plotly
+requests
