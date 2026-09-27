@@ -3,11 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Iconos para Pantalla de Inicio / App Movil -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/logo.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/logo.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/logo.png">
+    <link rel="manifest" href="/manifest.json">
+
     <!-- Modo PWA para iPhone / iOS -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Finanzas">
     <title>Control de Finanzas</title>
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -325,7 +333,7 @@
         </div>
     </div>
 
-    <!-- NAVBAR INFERIOR (Centrado geométrico perfecto) -->
+    <!-- NAVBAR INFERIOR -->
     <nav class="fixed bottom-0 inset-x-0 bg-[#093142] border-t border-sky-900/60 z-20 shadow-2xl pb-4">
         <div class="max-w-xl mx-auto grid grid-cols-3 pt-3">
             <button id="nav-inicio" onclick="cambiarPestana('inicio')" class="flex flex-col items-center justify-center w-full text-pink-pastel">
@@ -407,7 +415,6 @@
             document.getElementById('opts-categoria').classList.add('hidden');
         }
 
-        // Cierra los desplegables si se hace clic fuera
         window.addEventListener('click', function(e) {
             if (!document.getElementById('dropdown-tipo-container')?.contains(e.target)) {
                 document.getElementById('opts-tipo-mov')?.classList.add('hidden');
