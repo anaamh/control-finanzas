@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
@@ -5,10 +6,14 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel, Field, Session, create_engine, select
 
-# --- CONEXIÓN A BASE DE DATOS EN LA NUBE (SUPABASE) ---
-sqlite_url = "postgresql://postgres.wuorftaoixtanodllrxu:70K0zi5JJiEQwJFv@aws-1-eu-west-1.pooler.supabase.com:5432/postgres"
-connect_args = {"check_same_thread": False}
-engine = create_engine(sqlite_url)
+# --- CONEXIÓN A BASE DE DATOS EN LA NUBE (SUPABASE / RENDER) ---
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://postgres.wuorftaoixtanodllrxu:70K0zi5JJiEQwJFv@aws-1-eu-west-1.pooler.supabase.com:5432/postgres"
+)
+
+# Motor de base de datos listo para PostgreSQL en la nube
+engine = create_engine(DATABASE_URL)
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)

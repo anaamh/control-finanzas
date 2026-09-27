@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Finanzas</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'app-input': '#0f3846',
+                        'pink-pastel': '#ffcdd4',
+                        'pink-pastel-subtle': 'rgba(255, 205, 212, 0.15)',
+                        'emerald-pastel': '#a7f3d0',
+                        'emerald-pastel-subtle': 'rgba(167, 243, 208, 0.15)',
+                        'cyan-pastel': '#82c8ec'
+                    },
+                    fontFamily: {
+                        sans: ['Nunito', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Chart.js + Plugin DataLabels -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+</head>
+<body class="bg-[#062836] text-white font-sans min-h-screen pb-24">
+
+    <!-- HEADER / SALDO DESTACADO -->
+    <header class="p-5 text-center bg-[#093142] border-b border-sky-900/50 sticky top-0 z-10">
+        <p class="text-xs text-sky-200/70 font-bold uppercase tracking-wider">Saldo Total Acumulado</p>
+        <h1 id="saldo-total-destacado" class="text-3xl font-black text-cyan-pastel mt-1">0.00 €</h1>
+    </header>
+
+    <main class="max-w-xl mx-auto p-4 space-y-6">
+
+        <!-- PESTAÑA 1: INICIO (MES ACTUAL) -->
+        <section id="tab-inicio" class="space-y-5">
+            <!-- KPIs Mes Actual -->
+            <div class="grid grid-cols-3 gap-2.5">
+                <div class="bg-app-input p-3 rounded-2xl text-center border border-sky-900/40">
+                    <p class="text-[10px] text-sky-200/70 font-bold uppercase">Ingresos</p>
+                    <p id="kpi-ingresos-mes" class="text-sm font-extrabold text-emerald-pastel mt-1">0.00 €</p>
+                </div>
+                <div class="bg-app-input p-3 rounded-2xl text-center border border-sky-900/40">
+                    <p class="text-[10px] text-sky-200/70 font-bold uppercase">Gastos</p>
+                    <p id="kpi-gastos-mes" class="text-sm font-extrabold text-pink-pastel mt-1">0.00 €</p>
+                </div>
+                <div class="bg-app-input p-3 rounded-2xl text-center border border-sky-900/40">
+                    <p class="text-[10px] text-sky-200/70 font-bold uppercase">Balance</p>
+                    <p id="kpi-balance-mes" class="text-sm font-extrabold text-cyan-pastel mt-1">0.00 €</p>
+                </div>
+            </div>
+
+            <!-- 1. Formulario Añadir Movimiento -->
+            <form id="form-movimiento" onsubmit="guardarMovimiento(event)" class="bg-app-input p-4 rounded-2xl border border-sky-900/40 space-y-3">
+                <h3 class="text-xs font-black text-cyan-pastel uppercase tracking-wide">Nuevo Movimiento</h3>
+                
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[10px] text-sky-200/70 font-bold block mb-1">Fecha</label>
+                        <input type="hidden" id="inp-fecha">
+                        <button type="button" onclick="abrirCalendario('form', 'dia')" class="w-full bg-[#062836] border border-sky-800 text-xs rounded-xl p-2.5 text-left font-bold text-sky-100 flex justify-between items-center">
+                            <span id="txt-fecha-mostrar">Seleccionar fecha</span>
+                            <span>📅</span>
+                        </button>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-sky-200/70 font-bold block mb-1">Monto (€)</label>
+                        <input type="number" step="0.01" id="inp-monto" required placeholder="0.00" class="w-full bg-[#062836] border border-sky-800 text-xs rounded-xl p-2.5 font-bold text-white focus:outline-none focus:border-cyan-pastel">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[10px] text-sky-200/70 font-bold block mb-1">Tipo</label>
+                        <select id="sel-tipo-mov" class="w-full bg-[#062836] border border-sky-800 text-xs rounded-xl p-2.5 font-bold text-white focus:outline-none">
+                            <option value="gasto">Gasto</option>
+                            <option value="ingreso">Ingreso</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-sky-200/70 font-bold block mb-1">Categoría</label>
+                        <select id="sel-categoria" required class="w-full bg-[#062836] border border-sky-800 text-xs rounded-xl p-2.5 font-bold text-white focus:outline-none"></select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-[10px] text-sky-200/70 font-bold block mb-1">Descripción</label>
+                    <input type="text" id="inp-desc" placeholder="Ej: Compra semanal" class="w-full bg-[#062836] border border-sky-800 text-xs rounded-xl p-2.5 font-bold text-white focus:outline-none">
+                </div>
+
+                <button type="submit" id="btn-guardar" class="w-full py-3 bg-pink-pastel text-sky-950 rounded-xl font-extrabold text-xs shadow-md active:scale-95 transition">Guardar Movimiento</button>
+            </form>
+
+            <!-- 2. Gestión de Categorías -->
+            <div class="bg-app-input p-4 rounded-2xl border border-sky-900/40 space-y-3">
+                <h3 class="text-xs font-black text-cyan-pastel uppercase tracking-wide">Categorías</h3>
+                <form onsubmit="crearNuevaCategoria(event)" class="flex gap-2">
+                    <input type="text" id="cat-emoji" placeholder="Emoji" class="w-16 bg-[#062836] border border-sky-800 text-xs rounded-xl p-2 text-center font-bold text-white">
+                    <input type="text" id="cat-nombre" placeholder="Nombre de categoría" required class="flex-1 bg-[#062836] border border-sky-800 text-xs rounded-xl p-2 font-bold text-white">
+                    <button type="submit" class="bg-emerald-pastel text-sky-950 font-bold px-3 py-2 rounded-xl text-xs">+ Añadir</button>
+                </form>
+                <div id="lista-tags-cat" class="flex flex-wrap gap-1.5 pt-1"></div>
+            </div>
+
+            <!-- 3. Controles Modo Vista -->
+            <div class="flex justify-between items-center bg-[#093142] p-1.5 rounded-2xl border border-sky-900/50">
+                <span class="text-xs font-bold text-sky-200/70 ml-2">Movimientos del Mes</span>
+                <div class="flex space-x-1">
+                    <button id="btn-p1-notis" onclick="cambiarModoVistaP1('notis')" class="px-3 py-1 text-xs font-bold rounded-xl bg-pink-pastel text-sky-950">Lista</button>
+                    <button id="btn-p1-tabla" onclick="cambiarModoVistaP1('tabla')" class="px-3 py-1 text-xs font-bold rounded-xl text-sky-200/70">Tabla</button>
+                    <button id="btn-p1-graficos" onclick="cambiarModoVistaP1('graficos')" class="px-3 py-1 text-xs font-bold rounded-xl text-sky-200/70">Gráfico</button>
+                </div>
+            </div>
+
+            <!-- Vista 1: Lista Notis -->
+            <div id="p1-vista-notis" class="space-y-2.5">
+                <div id="p1-lista-notis" class="space-y-2.5"></div>
+                <button id="btn-p1-ver-mas" onclick="toggleVerMasP1()" class="w-full py-2 text-xs font-bold text-cyan-pastel hover:underline text-center">Ver más</button>
+            </div>
+
+            <!-- Vista 2: Tabla -->
+            <div id="p1-vista-tabla" class="hidden bg-app-input rounded-2xl p-3 border border-sky-900/40 overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="text-[10px] text-sky-200/60 uppercase border-b border-sky-800/50">
+                            <th class="pb-2 px-2">Fecha</th>
+                            <th class="pb-2 px-2">Tipo</th>
+                            <th class="pb-2 px-2">Cat.</th>
+                            <th class="pb-2 px-2">Desc.</th>
+                            <th class="pb-2 px-2 text-right">Monto</th>
+                        </tr>
+                    </thead>
+                    <tbody id="p1-tabla-body" class="divide-y divide-sky-900/30"></tbody>
+                </table>
+            </div>
+
+            <!-- Vista 3: Gráfico -->
+            <div id="p1-vista-graficos" class="hidden bg-app-input p-4 rounded-2xl border border-sky-900/40">
+                <h3 class="text-xs font-bold text-sky-200/80 mb-3 text-center">Balance Neto por Categoría (Mes Actual)</h3>
+                <div class="h-64 relative">
+                    <canvas id="chartBalanceP1"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- PESTAÑA 2: DETALLE POR MES -->
+        <section id="tab-mes" class="hidden space-y-5">
+            <!-- Selector de Mes -->
+            <div class="flex justify-between items-center bg-app-input p-3 rounded-2xl border border-sky-900/40">
+                <span class="text-xs font-bold text-sky-200/70">Mes seleccionado:</span>
+                <button type="button" onclick="abrirCalendario('mes-filtro', 'mes')" class="bg-[#062836] border border-sky-800 text-xs font-extrabold text-pink-pastel px-3 py-1.5 rounded-xl flex items-center gap-2">
+                    <span id="btn-sel-mes-text">Seleccionar Mes</span>
+                    <span>🗓️</span>
+                </button>
+            </div>
+
+            <!-- KPIs Mes Filtro -->
+            <div class="grid grid-cols-3 gap-2.5">
+                <div class="bg-app-input p-3 rounded-2xl text-center border border-sky-900/40">
+                    <p class="text-[10px] text-sky-200/70 font-bold uppercase">Ingresos</p>
+                    <p id="p2-mes-ingresos" class="text-sm font-extrabold text-emerald-pastel mt-1">0.00 €</p>
+                </div>
+                <div class="bg-app-input p-3 rounded-2xl text-center border border-sky-900/40">
+                    <p class="text-[10px] text-sky-200/70 font-bold uppercase">Gastos</p>
+                    <p id="p2-mes-gastos" class="text-sm font-extrabold text-pink-pastel mt-1">0.00 €</p>
+                </div>
+                <div class="bg-app-input p-3 rounded-2xl text-center border border-sky-900/40">
+                    <p class="text-[10px] text-sky-200/70 font-bold uppercase">Balance</p>
+                    <p id="p2-mes-balance" class="text-sm font-extrabold text-cyan-pastel mt-1">0.00 €</p>
+                </div>
+            </div>
+
+            <!-- Botones Vista P2 -->
+            <div class="flex justify-between items-center bg-[#093142] p-1.5 rounded-2xl border border-sky-900/50">
+                <span class="text-xs font-bold text-sky-200/70 ml-2">Detalles del Mes</span>
+                <div class="flex space-x-1">
+                    <button id="btn-p2-notis" onclick="cambiarModoVistaP2('notis')" class="px-3 py-1 text-xs font-bold rounded-xl bg-pink-pastel text-sky-950">Lista</button>
+                    <button id="btn-p2-tabla" onclick="cambiarModoVistaP2('tabla')" class="px-3 py-1 text-xs font-bold rounded-xl text-sky-200/70">Tabla</button>
+                    <button id="btn-p2-graficos" onclick="cambiarModoVistaP2('graficos')" class="px-3 py-1 text-xs font-bold rounded-xl text-sky-200/70">Gráficos</button>
+                </div>
+            </div>
+
+            <!-- P2 Vista Lista -->
+            <div id="p2-vista-notis" class="space-y-2.5">
+                <div id="p2-lista-movs-mes" class="space-y-2.5"></div>
+            </div>
+
+            <!-- P2 Vista Tabla -->
+            <div id="p2-vista-tabla" class="hidden bg-app-input rounded-2xl p-3 border border-sky-900/40 overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="text-[10px] text-sky-200/60 uppercase border-b border-sky-800/50">
+                            <th class="pb-2 px-2">Fecha</th>
+                            <th class="pb-2 px-2">Tipo</th>
+                            <th class="pb-2 px-2">Cat.</th>
+                            <th class="pb-2 px-2">Desc.</th>
+                            <th class="pb-2 px-2 text-right">Monto</th>
+                        </tr>
+                    </thead>
+                    <tbody id="p2-tabla-body" class="divide-y divide-sky-900/30"></tbody>
+                </table>
+            </div>
+
+            <!-- P2 Vista Gráficos -->
+            <div id="p2-vista-graficos" class="hidden space-y-4">
+                <div class="bg-app-input p-4 rounded-2xl border border-sky-900/40">
+                    <h3 class="text-xs font-bold text-sky-200/80 mb-3 text-center">Balance Neto por Categoría (Mes Seleccionado)</h3>
+                    <div class="h-64 relative">
+                        <canvas id="chartRoscoP2"></canvas>
+                    </div>
+                </div>
+                <div class="bg-app-input p-4 rounded-2xl border border-sky-900/40">
+                    <h3 class="text-xs font-bold text-sky-200/80 mb-3 text-center">Gastos por Categoría</h3>
+                    <div class="h-56 relative">
+                        <canvas id="chartGastosP2"></canvas>
+                    </div>
+                </div>
+                <div class="bg-app-input p-4 rounded-2xl border border-sky-900/40">
+                    <h3 class="text-xs font-bold text-sky-200/80 mb-3 text-center">Ingresos por Categoría</h3>
+                    <div class="h-56 relative">
+                        <canvas id="chartIngresosP2"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PESTAÑA 3: HISTÓRICO GLOBAL -->
+        <section id="tab-historico" class="hidden space-y-5">
+            <div class="grid grid-cols-2 gap-2.5">
+                <div class="bg-app-input p-3 rounded-2xl border border-sky-900/40">
+                    <p class="text-[10px] text-sky-200/70 font-bold uppercase">Total Ingresos</p>
+                    <p id="p3-suma-ingresos" class="text-base font-extrabold text-emerald-pastel mt-1">0.00 €</p>
+                </div>
+                <div class="bg-app-input p-3 rounded-2xl border border-sky-900/40">
+                    <p class="text-[10px] text-sky-200/70 font-bold uppercase">Total Gastos</p>
+                    <p id="p3-suma-gastos" class="text-base font-extrabold text-pink-pastel mt-1">0.00 €</p>
+                </div>
+                <div class="bg-app-input p-3 rounded-2xl border border-sky-900/40">
+                    <p class="text-[10px] text-sky-200/70 font-bold uppercase">Balance Global</p>
+                    <p id="p3-balance-global" class="text-base font-extrabold text-cyan-pastel mt-1">0.00 €</p>
+                </div>
+                <div class="bg-app-input p-3 rounded-2xl border border-sky-900/40">
+                    <p class="text-[10px] text-sky-200/70 font-bold uppercase">Saldo Actual</p>
+                    <p id="p3-saldo-actual" class="text-base font-extrabold text-white mt-1">0.00 €</p>
+                </div>
+            </div>
+
+            <!-- Gráfico Balance por Categorías (Todas) -->
+            <div class="bg-app-input p-4 rounded-2xl border border-sky-900/40">
+                <h3 class="text-xs font-bold text-sky-200/80 mb-3 text-center">Balance Histórico por Categoría</h3>
+                <div class="h-64 relative">
+                    <canvas id="chartBalanceHistoricoCat"></canvas>
+                </div>
+            </div>
+
+            <!-- Gráfico Evolución Mensual -->
+            <div class="bg-app-input p-4 rounded-2xl border border-sky-900/40">
+                <h3 class="text-xs font-bold text-sky-200/80 mb-3 text-center">Evolución Mensual (Ingresos vs Gastos)</h3>
+                <div class="h-64 relative">
+                    <canvas id="chartHistoricoBarra"></canvas>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL CALENDARIO -->
+    <div id="modal-calendar" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-[#093142] border border-sky-800 rounded-3xl p-5 w-full max-w-sm space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center">
+                <button onclick="calMesAnterior()" class="p-2 text-cyan-pastel font-black hover:bg-sky-900/50 rounded-xl">◀</button>
+                <div class="text-center">
+                    <span id="cal-titulo-mes" class="font-extrabold text-sm text-white"></span>
+                    <span id="cal-titulo-anio" class="font-bold text-xs text-sky-200/60 ml-1"></span>
+                </div>
+                <button onclick="calMesSiguiente()" class="p-2 text-cyan-pastel font-black hover:bg-sky-900/50 rounded-xl">▶</button>
+            </div>
+
+            <!-- Vista Días -->
+            <div id="cal-vista-dias">
+                <div class="grid grid-cols-7 text-center text-[10px] font-bold text-sky-200/50 mb-2">
+                    <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
+                </div>
+                <div id="cal-grid-dias" class="grid grid-cols-7 text-center gap-1"></div>
+            </div>
+
+            <!-- Vista Meses -->
+            <div id="cal-vista-meses" class="hidden grid grid-cols-3 gap-2"></div>
+
+            <button onclick="cerrarCalendario()" class="w-full py-2 bg-app-input text-sky-200 text-xs font-bold rounded-xl border border-sky-800">Cancelar</button>
+        </div>
+    </div>
+
+    <!-- NAVBAR INFERIOR -->
+    <nav class="fixed bottom-0 inset-x-0 bg-[#093142] border-t border-sky-900/60 p-3 flex justify-around items-center z-20">
+        <button id="nav-inicio" onclick="cambiarPestana('inicio')" class="flex flex-col items-center text-pink-pastel">
+            <span class="text-lg">🏠</span>
+            <span class="text-[10px] font-bold mt-0.5">Inicio</span>
+        </button>
+        <button id="nav-mes" onclick="cambiarPestana('mes')" class="flex flex-col items-center text-sky-200/50">
+            <span class="text-lg">📅</span>
+            <span class="text-[10px] font-bold mt-0.5">Mes</span>
+        </button>
+        <button id="nav-historico" onclick="cambiarPestana('historico')" class="flex flex-col items-center text-sky-200/50">
+            <span class="text-lg">📊</span>
+            <span class="text-[10px] font-bold mt-0.5">Histórico</span>
+        </button>
+    </nav>
+
+    <!-- SCRIPT LÓGICA COMPLETA -->
+    <script>
+        Chart.register(ChartDataLabels);
+
+        const API_URL = "https://control-finanzas-api-eoqj.onrender.com";
+        let categoriasBD = [];
+        let todasTransacciones = [];
+        let mostrarTodosNotisP1 = false;
+        let mesFiltroSeleccionado = "";
+
+        // Instancias de Gráficos
+        let chartRoscoP2Inst = null;
+        let chartGastosP2Inst = null;
+        let chartIngresosP2Inst = null;
+        let chartBalanceP1Inst = null;
+        let chartBalanceHistoricoCatInst = null;
+        let chartBarraHistoricoInst = null;
+
+        // MAPA DE EMOJIS
+        const mapaEmojis = {
+            'familia': '🫀', 'saldo': '💰', 'lee': '🔬', 'uji': '🎓',
+            'comida': '🥘', 'paella': '🥘', 'amigos': '🎁',
+            'cultura y artes en vivo': '🎟️', 'cultura': '🎟️', 'artes': '🎟️', 'entradas': '🎟️',
+            'bizum': '📲', 'super': '🛒', 'compra': '🛒',
+            'restaurante': '🍔', 'bar': '🍻', 'café': '☕', 'casa': '🏠',
+            'agua': '💧', 'luz': '💡', 'gas': '🔥', 'nómina': '💰', 'ingreso': '💵',
+            'transporte': '🚗', 'gasolina': '⛽', 'salud': '💊', 'ocio': '🎉',
+            'libros': '📚', 'ropa': '🛍️', 'regalo': '🎁', 'viaje': '✈️'
+        };
+
+        const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+        // ESTADO DEL CALENDARIO
+        let calAnio = 2026;
+        let calMes = 8;
+        let calModo = 'dia';
+        let calTarget = 'form';
+
+        function obtenerFechaHoyISO() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        function obtenerMesActualISO() {
+            const hoy = new Date();
+            return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
+        }
+
+        function establecerFechaHoyDefault() {
+            const hoy = obtenerFechaHoyISO();
+            const inputFecha = document.getElementById('inp-fecha');
+            if (inputFecha && !inputFecha.value) {
+                inputFecha.value = hoy;
+                document.getElementById('txt-fecha-mostrar').innerText = formatearFechaLegible(hoy);
+            }
+        }
+
+        function formatearFechaLegible(fechaStr) {
+            if (!fechaStr) return "Seleccionar fecha";
+            const parts = fechaStr.split('-');
+            if (parts.length < 3) return fechaStr;
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+
+        function obtenerNombreMesAnio(mesStr) {
+            if (!mesStr) return "";
+            const parts = mesStr.split('-');
+            const anio = parts[0];
+            const mesIdx = parseInt(parts[1], 10) - 1;
+            return `${nombresMeses[mesIdx]} ${anio}`;
+        }
+
+        function esIngresoTx(tx) {
+            if (!tx) return false;
+            if (tx.type) {
+                const t = String(tx.type).toLowerCase().trim();
+                if (t === 'ingreso') return true;
+                if (t === 'gasto' || t === 'egreso') return false;
+            }
+            const catObj = categoriasBD.find(c => c.id === tx.category_id);
+            if (catObj && catObj.type) {
+                const t = String(catObj.type).toLowerCase().trim();
+                if (t === 'ingreso') return true;
+            }
+            return false;
+        }
+
+        function obtenerEmoji(nombre) {
+            if (!nombre) return '🏷️';
+            const matchEmoji = nombre.match(/^(\p{Extended_Pictographic}|\p{Emoji})/u);
+            if (matchEmoji) return matchEmoji[0];
+
+            const str = nombre.toLowerCase().trim();
+            for (let clave in mapaEmojis) {
+                if (str.includes(clave)) return mapaEmojis[clave];
+            }
+            return '🏷️';
+        }
+
+        function obtenerNombreLimpio(nombre) {
+            if (!nombre) return '';
+            return nombre.replace(/^(\p{Extended_Pictographic}|\p{Emoji})\s*/u, '').trim();
+        }
+
+        // CONTROL DE PESTAÑAS
+        function cambiarPestana(p) {
+            ['inicio', 'mes', 'historico'].forEach(tab => {
+                document.getElementById(`tab-${tab}`).classList.add('hidden');
+                document.getElementById(`nav-${tab}`).className = 'flex flex-col items-center text-sky-200/50';
+            });
+            document.getElementById(`tab-${p}`).classList.remove('hidden');
+            document.getElementById(`nav-${p}`).className = 'flex flex-col items-center text-pink-pastel';
+
+            if (p === 'mes') cargarDetalleMes();
+            if (p === 'historico') cargarPantallaHistorico();
+        }
+
+        function cambiarModoVistaP1(v) {
+            ['notis', 'tabla', 'graficos'].forEach(m => {
+                document.getElementById(`p1-vista-${m}`).classList.add('hidden');
+                document.getElementById(`btn-p1-${m}`).className = 'px-3 py-1 text-xs font-bold rounded-xl text-sky-200/70';
+            });
+            document.getElementById(`p1-vista-${v}`).classList.remove('hidden');
+            document.getElementById(`btn-p1-${v}`).className = 'px-3 py-1 text-xs font-bold rounded-xl bg-pink-pastel text-sky-950';
+
+            if (v === 'graficos') renderGraficoP1BalanceNeto();
+        }
+
+        function cambiarModoVistaP2(v) {
+            ['notis', 'tabla', 'graficos'].forEach(m => {
+                document.getElementById(`p2-vista-${m}`).classList.add('hidden');
+                document.getElementById(`btn-p2-${m}`).className = 'px-3 py-1 text-xs font-bold rounded-xl text-sky-200/70';
+            });
+            document.getElementById(`p2-vista-${v}`).classList.remove('hidden');
+            document.getElementById(`btn-p2-${v}`).className = 'px-3 py-1 text-xs font-bold rounded-xl bg-pink-pastel text-sky-950';
+
+            if (v === 'graficos') renderGraficosP2();
+        }
+
+        // CARGA GENERAL
+        async function cargarTodo() {
+            establecerFechaHoyDefault();
+            if (!mesFiltroSeleccionado) mesFiltroSeleccionado = obtenerMesActualISO();
+            document.getElementById('btn-sel-mes-text').innerText = obtenerNombreMesAnio(mesFiltroSeleccionado);
+
+            await cargarCategorias();
+            await cargarBalanceKPIs();
+            await cargarTransacciones();
+        }
+
+        async function cargarCategorias() {
+            try {
+                const res = await fetch(`${API_URL}/categories/`);
+                categoriasBD = await res.json();
+                
+                const select = document.getElementById('sel-categoria');
+                const tagBox = document.getElementById('lista-tags-cat');
+                
+                select.innerHTML = '<option value="">Selecciona una categoría</option>';
+                tagBox.innerHTML = '';
+
+                categoriasBD.forEach(cat => {
+                    const emoji = obtenerEmoji(cat.name);
+                    const nombreLimpio = obtenerNombreLimpio(cat.name);
+                    
+                    select.innerHTML += `<option value="${cat.name}">${emoji} ${nombreLimpio}</option>`;
+                    
+                    const tag = document.createElement('div');
+                    tag.className = "text-[11px] px-3 py-1.5 rounded-2xl bg-app-input border border-app-input text-sky-100 font-bold flex items-center gap-2";
+                    tag.innerHTML = `
+                        <span>${emoji} ${nombreLimpio}</span>
+                        <button onclick="eliminarCategoria('${cat.id}', '${nombreLimpio}')" class="text-pink-pastel hover:text-red-400 font-black ml-1 text-xs transition">✕</button>
+                    `;
+                    tagBox.appendChild(tag);
+                });
+            } catch (e) { console.error("Error cargando categorías:", e); }
+        }
+
+        async function cargarBalanceKPIs() {
+            try {
+                const res = await fetch(`${API_URL}/summary/balance`);
+                const b = await res.json();
+                const balanceVal = Number(b.balance || 0);
+                document.getElementById('saldo-total-destacado').innerText = `${balanceVal.toFixed(2)} €`;
+            } catch (e) { console.error("Error cargando balance:", e); }
+        }
+
+        async function cargarTransacciones() {
+            try {
+                const res = await fetch(`${API_URL}/transactions/`);
+                todasTransacciones = await res.json();
+                renderPantalla1MesActual();
+            } catch (e) { console.error("Error cargando transacciones:", e); }
+        }
+
+        function renderPantalla1MesActual() {
+            const mesActual = obtenerMesActualISO();
+            const txsMesActual = todasTransacciones.filter(tx => tx.date.startsWith(mesActual));
+
+            let incMes = 0, expMes = 0;
+            txsMesActual.forEach(tx => {
+                if (esIngresoTx(tx)) incMes += Number(tx.amount);
+                else expMes += Number(tx.amount);
+            });
+
+            document.getElementById('kpi-ingresos-mes').innerText = `${incMes.toFixed(2)} €`;
+            document.getElementById('kpi-gastos-mes').innerText = `${expMes.toFixed(2)} €`;
+            document.getElementById('kpi-balance-mes').innerText = `${(incMes - expMes).toFixed(2)} €`;
+
+            renderNotisP1(txsMesActual);
+            renderTablaP1(txsMesActual);
+            renderGraficoP1BalanceNeto();
+        }
+
+        function renderNotisP1(txs) {
+            const cont = document.getElementById('p1-lista-notis');
+            cont.innerHTML = '';
+
+            if (txs.length === 0) {
+                cont.innerHTML = '<p class="text-xs text-sky-200/60 italic text-center py-4">Sin movimientos en este mes actual.</p>';
+                return;
+            }
+
+            const listaMostrar = mostrarTodosNotisP1 ? txs : txs.slice(0, 5);
+
+            listaMostrar.forEach(tx => {
+                const catObj = categoriasBD.find(c => c.id === tx.category_id) || { name: 'General' };
+                const esIngreso = esIngresoTx(tx);
+                const emoji = obtenerEmoji(catObj.name);
+                const nombreLimpio = obtenerNombreLimpio(catObj.name);
+
+                const card = document.createElement('div');
+                card.className = "bg-app-input border border-app-input p-3.5 rounded-2xl shadow-sm flex items-center justify-between";
+                card.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-2xl ${esIngreso ? 'bg-emerald-pastel-subtle text-emerald-pastel' : 'bg-pink-pastel-subtle text-pink-pastel'} flex items-center justify-center font-bold text-lg">
+                            ${emoji}
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-white">${tx.description || nombreLimpio}</p>
+                            <div class="flex items-center gap-1.5 text-[10px] text-sky-200/70 mt-0.5 font-semibold">
+                                <span>${nombreLimpio}</span>
+                                <span>•</span>
+                                <span>${new Date(tx.date).toLocaleDateString('es-ES')}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <span class="font-extrabold text-sm ${esIngreso ? 'text-emerald-pastel' : 'text-pink-pastel'}">
+                        ${esIngreso ? '+' : '-'}${Number(tx.amount).toFixed(2)} €
+                    </span>
+                `;
+                cont.appendChild(card);
+            });
+
+            document.getElementById('btn-p1-ver-mas').innerText = mostrarTodosNotisP1 ? "Ver menos" : "Ver más";
+        }
+
+        function toggleVerMasP1() {
+            mostrarTodosNotisP1 = !mostrarTodosNotisP1;
+            const mesActual = obtenerMesActualISO();
+            const txs = todasTransacciones.filter(tx => tx.date.startsWith(mesActual));
+            renderNotisP1(txs);
+        }
+
+        function renderTablaP1(txs) {
+            const tbody = document.getElementById('p1-tabla-body');
+            tbody.innerHTML = '';
+
+            txs.forEach(tx => {
+                const catObj = categoriasBD.find(c => c.id === tx.category_id) || { name: 'General' };
+                const esIngreso = esIngresoTx(tx);
+                const emoji = obtenerEmoji(catObj.name);
+                const nombreLimpio = obtenerNombreLimpio(catObj.name);
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-2.5 px-2 text-sky-200/70 text-xs font-semibold">${new Date(tx.date).toLocaleDateString('es-ES')}</td>
+                    <td class="py-2.5 px-2"><span class="text-[9px] uppercase font-bold px-2 py-0.5 rounded-full ${esIngreso ? 'bg-emerald-pastel-subtle text-emerald-pastel' : 'bg-pink-pastel-subtle text-pink-pastel'}">${esIngreso ? 'Ingreso' : 'Gasto'}</span></td>
+                    <td class="py-2.5 px-2 font-bold text-sky-100 text-xs">${emoji} ${nombreLimpio}</td>
+                    <td class="py-2.5 px-2 text-sky-200/80 text-xs">${tx.description || '-'}</td>
+                    <td class="py-2.5 px-2 text-right font-extrabold text-xs ${esIngreso ? 'text-emerald-pastel' : 'text-pink-pastel'}">${esIngreso ? '+' : '-'}${Number(tx.amount).toFixed(2)} €</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderGraficoP1BalanceNeto() {
+            const ctx = document.getElementById('chartBalanceP1').getContext('2d');
+            if (chartBalanceP1Inst) chartBalanceP1Inst.destroy();
+
+            const mesActual = obtenerMesActualISO();
+            const txs = todasTransacciones.filter(tx => tx.date.startsWith(mesActual));
+
+            let balanceMap = {};
+            txs.forEach(tx => {
+                const catObj = categoriasBD.find(c => c.id === tx.category_id) || { name: 'General' };
+                const emoji = obtenerEmoji(catObj.name);
+                const key = emoji;
+                const esIngreso = esIngresoTx(tx);
+                const monto = Number(tx.amount);
+
+                balanceMap[key] = (balanceMap[key] || 0) + (esIngreso ? monto : -monto);
+            });
+
+            const labels = Object.keys(balanceMap);
+            const data = Object.values(balanceMap);
+            const bgColors = data.map(v => v >= 0 ? '#a7f3d0' : '#ffcdd4');
+
+            chartBalanceP1Inst = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: bgColors,
+                        borderRadius: 12,
+                        barThickness: 42
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: {
+                            color: '#ffffff',
+                            anchor: (ctx) => ctx.dataset.data[ctx.dataIndex] < 0 ? 'start' : 'end',
+                            align: (ctx) => ctx.dataset.data[ctx.dataIndex] < 0 ? 'bottom' : 'top',
+                            offset: 4,
+                            font: { family: 'Nunito', size: 10, weight: 'bold' },
+                            formatter: (val) => (val >= 0 ? '+' : '') + val.toFixed(2) + ' €'
+                        }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#e2e8f0', font: { family: 'Nunito', size: 18 } }, grid: { display: false } },
+                        y: { ticks: { color: '#82c8ec', font: { family: 'Nunito' } }, grid: { color: '#1a4f5f' } }
+                    }
+                }
+            });
+        }
+
+        function cargarDetalleMes() {
+            if (!mesFiltroSeleccionado) mesFiltroSeleccionado = obtenerMesActualISO();
+            document.getElementById('btn-sel-mes-text').innerText = obtenerNombreMesAnio(mesFiltroSeleccionado);
+
+            const txsMes = todasTransacciones.filter(tx => tx.date.startsWith(mesFiltroSeleccionado));
+            let inc = 0, exp = 0;
+
+            const contNotis = document.getElementById('p2-lista-movs-mes');
+            contNotis.innerHTML = '';
+            
+            const tbody = document.getElementById('p2-tabla-body');
+            tbody.innerHTML = '';
+
+            if (txsMes.length === 0) {
+                contNotis.innerHTML = '<p class="text-xs text-sky-200/60 italic text-center py-4">Sin movimientos en el mes seleccionado.</p>';
+            }
+
+            txsMes.forEach(tx => {
+                const catObj = categoriasBD.find(c => c.id === tx.category_id) || { name: 'General' };
+                const esIngreso = esIngresoTx(tx);
+                const emoji = obtenerEmoji(catObj.name);
+                const nombreLimpio = obtenerNombreLimpio(catObj.name);
+
+                if (esIngreso) inc += Number(tx.amount);
+                else exp += Number(tx.amount);
+
+                contNotis.innerHTML += `
+                    <div class="bg-app-input border border-app-input p-3 rounded-2xl flex justify-between items-center text-xs">
+                        <div class="flex items-center space-x-2.5">
+                            <span class="text-base">${emoji}</span>
+                            <div>
+                                <p class="font-bold text-white">${tx.description || nombreLimpio}</p>
+                                <span class="text-[10px] text-sky-200/70 font-semibold">${nombreLimpio} • ${new Date(tx.date).toLocaleDateString('es-ES')}</span>
+                            </div>
+                        </div>
+                        <span class="font-extrabold ${esIngreso ? 'text-emerald-pastel' : 'text-pink-pastel'}">${esIngreso ? '+' : '-'}${Number(tx.amount).toFixed(2)} €</span>
+                    </div>
+                `;
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="py-2.5 px-2 text-sky-200/70 text-xs font-semibold">${new Date(tx.date).toLocaleDateString('es-ES')}</td>
+                        <td class="py-2.5 px-2"><span class="text-[9px] uppercase font-bold px-2 py-0.5 rounded-full ${esIngreso ? 'bg-emerald-pastel-subtle text-emerald-pastel' : 'bg-pink-pastel-subtle text-pink-pastel'}">${esIngreso ? 'Ingreso' : 'Gasto'}</span></td>
+                        <td class="py-2.5 px-2 font-bold text-sky-100 text-xs">${emoji} ${nombreLimpio}</td>
+                        <td class="py-2.5 px-2 text-sky-200/80 text-xs">${tx.description || '-'}</td>
+                        <td class="py-2.5 px-2 text-right font-extrabold text-xs ${esIngreso ? 'text-emerald-pastel' : 'text-pink-pastel'}">${esIngreso ? '+' : '-'}${Number(tx.amount).toFixed(2)} €</td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('p2-mes-ingresos').innerText = `${inc.toFixed(2)} €`;
+            document.getElementById('p2-mes-gastos').innerText = `${exp.toFixed(2)} €`;
+            document.getElementById('p2-mes-balance').innerText = `${(inc - exp).toFixed(2)} €`;
+
+            renderGraficosP2();
+        }
+
+        function renderGraficosP2() {
+            const txsMes = todasTransacciones.filter(tx => tx.date.startsWith(mesFiltroSeleccionado));
+
+            // 1. Balance Neto por Categoría (Mes Seleccionado)
+            const ctxRosco = document.getElementById('chartRoscoP2').getContext('2d');
+            if (chartRoscoP2Inst) chartRoscoP2Inst.destroy();
+
+            let balanceMapP2 = {};
+            txsMes.forEach(tx => {
+                const catObj = categoriasBD.find(c => c.id === tx.category_id) || { name: 'General' };
+                const emoji = obtenerEmoji(catObj.name);
+                const key = emoji;
+                const esIngreso = esIngresoTx(tx);
+                const monto = Number(tx.amount);
+
+                balanceMapP2[key] = (balanceMapP2[key] || 0) + (esIngreso ? monto : -monto);
+            });
+
+            const labelsP2 = Object.keys(balanceMapP2);
+            const dataP2 = Object.values(balanceMapP2);
+            const bgColorsP2 = dataP2.map(v => v >= 0 ? '#a7f3d0' : '#ffcdd4');
+
+            chartRoscoP2Inst = new Chart(ctxRosco, {
+                type: 'bar',
+                data: {
+                    labels: labelsP2,
+                    datasets: [{
+                        data: dataP2,
+                        backgroundColor: bgColorsP2,
+                        borderRadius: 12,
+                        barThickness: 42
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: {
+                            color: '#ffffff',
+                            anchor: (ctx) => ctx.dataset.data[ctx.dataIndex] < 0 ? 'start' : 'end',
+                            align: (ctx) => ctx.dataset.data[ctx.dataIndex] < 0 ? 'bottom' : 'top',
+                            offset: 4,
+                            font: { family: 'Nunito', size: 10, weight: 'bold' },
+                            formatter: (val) => (val >= 0 ? '+' : '') + val.toFixed(2) + ' €'
+                        }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#e2e8f0', font: { family: 'Nunito', size: 18 } }, grid: { display: false } },
+                        y: { ticks: { color: '#82c8ec', font: { family: 'Nunito' } }, grid: { color: '#1a4f5f' } }
+                    }
+                }
+            });
+
+            // 2. Gastos por Categoría
+            const ctxGastos = document.getElementById('chartGastosP2').getContext('2d');
+            if (chartGastosP2Inst) chartGastosP2Inst.destroy();
+
+            let gastos = {};
+            txsMes.forEach(tx => {
+                if (!esIngresoTx(tx)) {
+                    const catObj = categoriasBD.find(c => c.id === tx.category_id) || { name: 'General' };
+                    const emoji = obtenerEmoji(catObj.name);
+                    gastos[emoji] = (gastos[emoji] || 0) + Number(tx.amount);
+                }
+            });
+
+            chartGastosP2Inst = new Chart(ctxGastos, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(gastos),
+                    datasets: [{ data: Object.values(gastos), backgroundColor: '#ffcdd4', borderRadius: 10, barThickness: 42 }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: {
+                            color: '#ffffff',
+                            anchor: 'end',
+                            align: 'top',
+                            offset: 4,
+                            font: { family: 'Nunito', size: 10, weight: 'bold' },
+                            formatter: v => `-${v.toFixed(2)}€`
+                        }
+                    },
+                    scales: { x: { ticks: { font: { size: 18 } }, grid: { display: false } }, y: { ticks: { color: '#82c8ec' }, grid: { color: '#1a4f5f' } } }
+                }
+            });
+
+            // 3. Ingresos por Categoría
+            const ctxIngresos = document.getElementById('chartIngresosP2').getContext('2d');
+            if (chartIngresosP2Inst) chartIngresosP2Inst.destroy();
+
+            let ingresos = {};
+            txsMes.forEach(tx => {
+                if (esIngresoTx(tx)) {
+                    const catObj = categoriasBD.find(c => c.id === tx.category_id) || { name: 'General' };
+                    const emoji = obtenerEmoji(catObj.name);
+                    ingresos[emoji] = (ingresos[emoji] || 0) + Number(tx.amount);
+                }
+            });
+
+            chartIngresosP2Inst = new Chart(ctxIngresos, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(ingresos),
+                    datasets: [{ data: Object.values(ingresos), backgroundColor: '#a7f3d0', borderRadius: 10, barThickness: 42 }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: {
+                            color: '#ffffff',
+                            anchor: 'end',
+                            align: 'top',
+                            offset: 4,
+                            font: { family: 'Nunito', size: 10, weight: 'bold' },
+                            formatter: v => `+${v.toFixed(2)}€`
+                        }
+                    },
+                    scales: { x: { ticks: { font: { size: 18 } }, grid: { display: false } }, y: { ticks: { color: '#82c8ec' }, grid: { color: '#1a4f5f' } } }
+                }
+            });
+        }
+
+        async function cargarPantallaHistorico() {
+            let totalIngresos = 0, totalGastos = 0;
+
+            todasTransacciones.forEach(tx => {
+                if (esIngresoTx(tx)) totalIngresos += Number(tx.amount);
+                else totalGastos += Number(tx.amount);
+            });
+
+            const balanceGlobal = totalIngresos - totalGastos;
+
+            document.getElementById('p3-suma-ingresos').innerText = `${totalIngresos.toFixed(2)} €`;
+            document.getElementById('p3-suma-gastos').innerText = `${totalGastos.toFixed(2)} €`;
+            document.getElementById('p3-balance-global').innerText = `${balanceGlobal.toFixed(2)} €`;
+            document.getElementById('p3-saldo-actual').innerText = document.getElementById('saldo-total-destacado').innerText;
+
+            renderGraficoBalanceHistoricoCategorias();
+            renderGraficoHistoricoEvolucion();
+        }
+
+        function renderGraficoBalanceHistoricoCategorias() {
+            const ctx = document.getElementById('chartBalanceHistoricoCat').getContext('2d');
+            if (chartBalanceHistoricoCatInst) chartBalanceHistoricoCatInst.destroy();
+
+            let balanceCatMap = {};
+
+            todasTransacciones.forEach(tx => {
+                let nombreCat = 'General';
+                const catObj = categoriasBD.find(c => c.id === tx.category_id);
+                if (catObj) {
+                    nombreCat = catObj.name;
+                } else if (tx.category_name) {
+                    nombreCat = tx.category_name;
+                }
+
+                const emoji = obtenerEmoji(nombreCat);
+                const key = emoji;
+                const esIngreso = esIngresoTx(tx);
+                const monto = Number(tx.amount);
+
+                balanceCatMap[key] = (balanceCatMap[key] || 0) + (esIngreso ? monto : -monto);
+            });
+
+            const labels = Object.keys(balanceCatMap);
+            const data = Object.values(balanceCatMap);
+            const bgColors = data.map(v => v >= 0 ? '#82c8ec' : '#ffcdd4');
+
+            chartBalanceHistoricoCatInst = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: bgColors,
+                        borderRadius: 10,
+                        barThickness: 42
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: {
+                            color: '#ffffff',
+                            anchor: (ctx) => ctx.dataset.data[ctx.dataIndex] < 0 ? 'start' : 'end',
+                            align: (ctx) => ctx.dataset.data[ctx.dataIndex] < 0 ? 'bottom' : 'top',
+                            offset: 4,
+                            font: { family: 'Nunito', size: 10, weight: 'bold' },
+                            formatter: (val) => (val >= 0 ? '+' : '') + val.toFixed(2) + ' €'
+                        }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#e2e8f0', font: { family: 'Nunito', size: 18 } }, grid: { display: false } },
+                        y: { ticks: { color: '#82c8ec', font: { family: 'Nunito' } }, grid: { color: '#1a4f5f' } }
+                    }
+                }
+            });
+        }
+
+        async function renderGraficoHistoricoEvolucion() {
+    try {
+        const res = await fetch(`${API_URL}/summary/monthly-history`);
+        const history = await res.json();
+
+        const ctx = document.getElementById('chartHistoricoBarra').getContext('2d');
+        if (chartBarraHistoricoInst) chartBarraHistoricoInst.destroy();
+
+        chartBarraHistoricoInst = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: history.map(h => h.period),
+                datasets: [
+                    {
+                        label: 'Ingresos (€)',
+                        data: history.map(h => h.income),
+                        backgroundColor: '#a7f3d0',
+                        borderRadius: 10,
+                        maxBarThickness: 32
+                    },
+                    {
+                        label: 'Gastos (€)',
+                        data: history.map(h => h.expense),
+                        backgroundColor: '#ffcdd4',
+                        borderRadius: 10,
+                        maxBarThickness: 32
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                // Espaciado entre las barras
+                categoryPercentage: 0.35, // Ancho total reservado para el mes
+                barPercentage: 0.85,      // Deja un 15% de margen libre entre las barras del mismo mes
+                layout: {
+                    padding: { top: 25 }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    datalabels: {
+                        display: true,
+                        color: '#ffffff',
+                        anchor: 'end',
+                        align: 'top',
+                        offset: 4,
+                        font: { family: 'Nunito', size: 10, weight: 'bold' },
+                        formatter: (val) => val > 0 ? `${val.toFixed(2)} €` : ''
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#e2e8f0', font: { family: 'Nunito', weight: 'bold' } },
+                        grid: { display: false }
+                    },
+                    y: {
+                        ticks: { color: '#82c8ec', font: { family: 'Nunito' } },
+                        grid: { color: '#1a4f5f' },
+                        grace: '15%'
+                    }
+                }
+            }
+        });
+    } catch (e) { console.error(e); }
+}
+
+        // CALENDARIO MODAL
+        function abrirCalendario(target, modo = 'dia') {
+            calTarget = target;
+            calModo = modo;
+
+            let fechaBase = new Date();
+            if (target === 'form') {
+                const val = document.getElementById('inp-fecha').value;
+                if (val) fechaBase = new Date(val + 'T00:00:00');
+            } else if (target === 'mes-filtro') {
+                if (mesFiltroSeleccionado) {
+                    const p = mesFiltroSeleccionado.split('-');
+                    fechaBase = new Date(parseInt(p[0]), parseInt(p[1]) - 1, 1);
+                }
+            }
+
+            calAnio = fechaBase.getFullYear();
+            calMes = fechaBase.getMonth();
+
+            renderCalendario();
+            document.getElementById('modal-calendar').classList.remove('hidden');
+        }
+
+        function cerrarCalendario() {
+            document.getElementById('modal-calendar').classList.add('hidden');
+        }
+
+        function calMesAnterior() {
+            calMes--;
+            if (calMes < 0) { calMes = 11; calAnio--; }
+            renderCalendario();
+        }
+
+        function calMesSiguiente() {
+            calMes++;
+            if (calMes > 11) { calMes = 0; calAnio++; }
+            renderCalendario();
+        }
+
+        function renderCalendario() {
+            document.getElementById('cal-titulo-mes').innerText = nombresMeses[calMes];
+            document.getElementById('cal-titulo-anio').innerText = calAnio;
+
+            const contDias = document.getElementById('cal-vista-dias');
+            const contMeses = document.getElementById('cal-vista-meses');
+
+            if (calModo === 'mes') {
+                contDias.classList.add('hidden');
+                contMeses.classList.remove('hidden');
+                renderGridMeses();
+            } else {
+                contMeses.classList.add('hidden');
+                contDias.classList.remove('hidden');
+                renderGridDias();
+            }
+        }
+
+        function renderGridDias() {
+            const grid = document.getElementById('cal-grid-dias');
+            grid.innerHTML = '';
+
+            const primerDiaMes = new Date(calAnio, calMes, 1);
+            const ultimoDiaMes = new Date(calAnio, calMes + 1, 0);
+
+            let diaSemanaInicio = primerDiaMes.getDay() - 1;
+            if (diaSemanaInicio === -1) diaSemanaInicio = 6;
+
+            const diasMesAnterior = new Date(calAnio, calMes, 0).getDate();
+
+            for (let i = diaSemanaInicio - 1; i >= 0; i--) {
+                const num = diasMesAnterior - i;
+                const d = document.createElement('div');
+                d.className = "py-2 text-sky-200/20 font-normal select-none";
+                d.innerText = num;
+                grid.appendChild(d);
+            }
+
+            const inpFechaVal = document.getElementById('inp-fecha').value;
+
+            for (let day = 1; day <= ultimoDiaMes.getDate(); day++) {
+                const dateStr = `${calAnio}-${String(calMes + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const esSeleccionado = (inpFechaVal === dateStr);
+
+                const btn = document.createElement('button');
+                btn.type = "button";
+                btn.className = `py-2 rounded-2xl font-extrabold transition text-sm ${
+                    esSeleccionado 
+                    ? 'bg-[#ffcdd4] text-[#062836] font-black shadow-lg scale-105' 
+                    : 'text-white hover:bg-sky-900/50 hover:text-cyan-pastel'
+                }`;
+                btn.innerText = day;
+                btn.onclick = () => seleccionarDia(dateStr);
+                grid.appendChild(btn);
+            }
+
+            const celdas = grid.children.length;
+            const rest = (celdas % 7 === 0) ? 0 : 7 - (celdas % 7);
+            for (let j = 1; j <= rest; j++) {
+                const d = document.createElement('div');
+                d.className = "py-2 text-sky-200/20 font-normal select-none";
+                d.innerText = j;
+                grid.appendChild(d);
+            }
+        }
+
+        function renderGridMeses() {
+            const grid = document.getElementById('cal-vista-meses');
+            grid.innerHTML = '';
+
+            nombresMeses.forEach((m, idx) => {
+                const mesStr = `${calAnio}-${String(idx + 1).padStart(2, '0')}`;
+                const esSeleccionado = (mesFiltroSeleccionado === mesStr);
+
+                const btn = document.createElement('button');
+                btn.type = "button";
+                btn.className = `py-3 rounded-2xl text-xs font-black transition ${
+                    esSeleccionado 
+                    ? 'bg-[#ffcdd4] text-[#062836] shadow-md scale-105' 
+                    : 'bg-app-input border border-app-input text-white hover:bg-sky-900/40'
+                }`;
+                btn.innerText = m;
+                btn.onclick = () => seleccionarMes(mesStr);
+                grid.appendChild(btn);
+            });
+        }
+
+        function seleccionarDia(dateStr) {
+            document.getElementById('inp-fecha').value = dateStr;
+            document.getElementById('txt-fecha-mostrar').innerText = formatearFechaLegible(dateStr);
+            cerrarCalendario();
+        }
+
+        function seleccionarMes(mesStr) {
+            mesFiltroSeleccionado = mesStr;
+            document.getElementById('btn-sel-mes-text').innerText = obtenerNombreMesAnio(mesStr);
+            cerrarCalendario();
+            cargarDetalleMes();
+        }
+
+        // GUARDAR Y CREAR
+        async function guardarMovimiento(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-guardar');
+            btn.disabled = true;
+            btn.innerText = "Guardando...";
+
+            const fechaInput = document.getElementById('inp-fecha').value;
+            const monto = parseFloat(document.getElementById('inp-monto').value);
+            const tipo = document.getElementById('sel-tipo-mov').value;
+            const nombreCat = document.getElementById('sel-categoria').value;
+            const desc = document.getElementById('inp-desc').value;
+
+            try {
+                let catMatch = categoriasBD.find(c => c.name.toLowerCase() === nombreCat.toLowerCase());
+
+                if (!catMatch) {
+                    const resCat = await fetch(`${API_URL}/categories/`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: nombreCat, type: "ambos" })
+                    });
+                    catMatch = await resCat.json();
+                }
+
+                const resTx = await fetch(`${API_URL}/transactions/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        amount: monto,
+                        description: desc,
+                        category_id: catMatch.id,
+                        type: tipo,
+                        date: fechaInput
+                    })
+                });
+
+                if (resTx.ok) {
+                    document.getElementById('form-movimiento').reset();
+                    establecerFechaHoyDefault();
+                    await cargarTodo();
+                }
+            } catch (err) { alert("Error guardando movimiento"); } 
+            finally {
+                btn.disabled = false;
+                btn.innerText = "Guardar Movimiento";
+            }
+        }
+
+        async function crearNuevaCategoria(e) {
+            e.preventDefault();
+            const emoji = document.getElementById('cat-emoji').value.trim();
+            const nombre = document.getElementById('cat-nombre').value.trim();
+
+            if (!nombre) return;
+            const nombreCompleto = emoji ? `${emoji} ${nombre}` : nombre;
+
+            try {
+                const res = await fetch(`${API_URL}/categories/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: nombreCompleto, type: "ambos" })
+                });
+
+                if (res.ok) {
+                    document.getElementById('cat-emoji').value = '';
+                    document.getElementById('cat-nombre').value = '';
+                    await cargarCategorias();
+                }
+            } catch (err) { alert("Error al crear categoría"); }
+        }
+
+        async function eliminarCategoria(catId, nombre) {
+            if (!confirm(`¿Eliminar la categoría "${nombre}"?`)) return;
+            try {
+                const res = await fetch(`${API_URL}/categories/${catId}`, { method: 'DELETE' });
+                if (res.ok) await cargarTodo();
+                else alert("No se pudo eliminar la categoría.");
+            } catch (err) { alert("Error al eliminar la categoría."); }
+        }
+
+        // INICIALIZACIÓN
+        cargarTodo();
+    </script>
+</body>
+</html>
