@@ -13,7 +13,7 @@ DATABASE_URL = os.getenv(
     "postgresql://postgres.wuorftaoixtanodllrxu:70K0zi5JJiEQwJFv@aws-1-eu-west-1.pooler.supabase.com:5432/postgres"
 )
 
-# Motor de base de datos con verificación de conexión previa (pre-ping)
+# Motor de base de datos listo para PostgreSQL en la nube
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
 def create_db_and_tables():
@@ -29,7 +29,7 @@ def get_session():
 class Category(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str
-    type: str  # Tipo asociado al crearse (ingreso / gasto)
+    type: str
 
 
 class Transaction(SQLModel, table=True):
@@ -56,7 +56,7 @@ class TransactionCreate(SQLModel):
 # --- APLICACIÓN FASTAPI ---
 app = FastAPI(title="Control de Finanzas API")
 
-# --- PERMISOS CORS PARA PERMITIR CONEXIÓN DESDE EL NAVEGADOR / HTML ---
+# --- PERMISOS CORS ---
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -66,7 +66,6 @@ app.add_middleware(
 )
 
 
-# Capturador global de errores para garantizar que los errores 500 incluyan CORS
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
@@ -111,7 +110,7 @@ def create_transaction(transaction: TransactionCreate, session: Session = Depend
     if not category:
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
     
-    # Procesamiento flexible del campo fecha
+    # Convierte la fecha recibida y le asigna la zona horaria UTC
     parsed_date = datetime.now(timezone.utc)
     if transaction.date:
         if isinstance(transaction.date, datetime):
@@ -124,6 +123,10 @@ def create_transaction(transaction: TransactionCreate, session: Session = Depend
                     parsed_date = datetime.strptime(transaction.date, "%Y-%m-%d")
                 except ValueError:
                     parsed_date = datetime.now(timezone.utc)
+
+    # Si la fecha no tiene zona horaria, se le fuerza UTC para Supabase
+    if parsed_date.tzinfo is None:
+        parsed_date = parsed_date.replace(tzinfo=timezone.utc)
 
     try:
         db_transaction = Transaction(
