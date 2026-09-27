@@ -12,7 +12,6 @@ DATABASE_URL = os.getenv(
     "postgresql://postgres.wuorftaoixtanodllrxu:70K0zi5JJiEQwJFv@aws-1-eu-west-1.pooler.supabase.com:5432/postgres"
 )
 
-# Motor de base de datos listo para PostgreSQL en la nube
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
 
@@ -20,28 +19,20 @@ def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
     with Session(engine) as session:
         try:
-            # 1. Crear la columna 'type' en PostgreSQL si no existe
+            # 1. Asegurar columna 'type' en 'transaction'
             session.exec(text('ALTER TABLE "transaction" ADD COLUMN IF NOT EXISTS type VARCHAR;'))
             session.commit()
             
-            # 2. Rellenar registros antiguos usando el tipo de su categoría asignada
+            # 2. SINCRONIZACIÓN HISTÓRICA:
+            # Hace que cada transacción tome exactamente el 'type' definido en la tabla 'category'
             session.exec(text('''
                 UPDATE "transaction" 
-                SET type = LOWER(category.type) 
+                SET type = category.type 
                 FROM category 
-                WHERE "transaction".category_id = category.id 
-                  AND ("transaction".type IS NULL OR "transaction".type = '');
+                WHERE "transaction".category_id = category.id;
             '''))
             session.commit()
-
-            # 3. Asignar 'gasto' a cualquier registro restante sin tipo
-            session.exec(text('''
-                UPDATE "transaction" 
-                SET type = 'gasto' 
-                WHERE type IS NULL OR type = '';
-            '''))
-            session.commit()
-        except Exception as e:
+        except Exception:
             session.rollback()
 
 
@@ -50,7 +41,7 @@ def get_session():
         yield session
 
 
-# --- MODELOS DE DATOS (TABLAS EN LA BASE DE DATOS) ---
+# --- MODELOS DE DATOS ---
 class Category(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str
@@ -62,7 +53,7 @@ class Transaction(SQLModel, table=True):
     amount: float
     description: Optional[str] = None
     category_id: int = Field(foreign_key="category.id")
-    type: Optional[str] = Field(default="gasto")
+    type: Optional[str] = Field(default=None)
     date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -80,20 +71,22 @@ class TransactionCreate(SQLModel):
     date: Optional[Union[datetime, str]] = None
 
 
-# --- CLASIFICADOR DE TIPO ---
-def resolve_type(tx_type_param: Optional[str], category: Optional[Category]) -> str:
-    if tx_type_param and tx_type_param.strip():
-        t = tx_type_param.strip().lower()
+# --- RESOLUCIÓN DE TIPO ---
+def resolve_transaction_type(explicit_type: Optional[str], category: Category) -> str:
+    # 1. Si el usuario seleccionó un tipo manual en el formulario, se respeta
+    if explicit_type and explicit_type.strip():
+        t = explicit_type.strip().lower()
         if "ingres" in t or "income" in t:
             return "ingreso"
         if "gast" in t or "egres" in t or "expense" in t:
             return "gasto"
 
+    # 2. Si no, se hereda el tipo oficial de la categoría asignada
     if category and category.type:
         cat_type = category.type.strip().lower()
-        if "ingres" in cat_type or "income" in cat_type or "gananc" in cat_type:
+        if "ingres" in cat_type or "income" in cat_type:
             return "ingreso"
-        if "gast" in cat_type or "egres" in cat_type or "expense" in cat_type:
+        if "gast" in cat_type or "egres" in cat_type:
             return "gasto"
 
     return "gasto"
@@ -102,7 +95,6 @@ def resolve_type(tx_type_param: Optional[str], category: Optional[Category]) -> 
 # --- APLICACIÓN FASTAPI ---
 app = FastAPI(title="Control de Finanzas API")
 
-# --- PERMISOS CORS ---
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -172,14 +164,15 @@ def create_transaction(transaction: TransactionCreate, session: Session = Depend
     if parsed_date.tzinfo is None:
         parsed_date = parsed_date.replace(tzinfo=timezone.utc)
 
-    tx_type = resolve_type(transaction.type, category)
+    # Determinación clara usando la relación directa con la categoría
+    final_type = resolve_transaction_type(transaction.type, category)
 
     try:
         db_transaction = Transaction(
             amount=float(transaction.amount),
             description=transaction.description,
             category_id=transaction.category_id,
-            type=tx_type,
+            type=final_type,
             date=parsed_date
         )
         session.add(db_transaction)
@@ -209,7 +202,8 @@ def read_transactions(session: Session = Depends(get_session)):
     output = []
     for tx in txs:
         cat = cat_map.get(tx.category_id)
-        tx_type = resolve_type(tx.type, cat)
+        # Se obtiene el tipo del registro en DB o de la categoría asociada
+        tx_type = resolve_transaction_type(tx.type, cat) if cat else (tx.type or "gasto")
         output.append({
             "id": tx.id,
             "amount": tx.amount,
@@ -235,7 +229,9 @@ def get_balance_summary(session: Session = Depends(get_session)):
     for tx in txs:
         cat = cat_map.get(tx.category_id)
         amt = abs(tx.amount)
-        if resolve_type(tx.type, cat) == "ingreso":
+        tx_type = resolve_transaction_type(tx.type, cat) if cat else (tx.type or "gasto")
+        
+        if tx_type == "ingreso":
             total_income += amt
         else:
             total_expense += amt
@@ -264,7 +260,9 @@ def get_monthly_history(session: Session = Depends(get_session)):
         
         cat = cat_map.get(tx.category_id)
         amt = abs(tx.amount)
-        if resolve_type(tx.type, cat) == "ingreso":
+        tx_type = resolve_transaction_type(tx.type, cat) if cat else (tx.type or "gasto")
+        
+        if tx_type == "ingreso":
             monthly_data[period]["income"] += amt
         else:
             monthly_data[period]["expense"] += amt
