@@ -1,9 +1,10 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import List, Optional
-from fastapi import FastAPI, Depends, HTTPException
+from typing import List, Optional, Union
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlmodel import SQLModel, Field, Session, create_engine, select
 
 # --- CONEXIÓN A BASE DE DATOS EN LA NUBE (SUPABASE / RENDER) ---
@@ -12,8 +13,8 @@ DATABASE_URL = os.getenv(
     "postgresql://postgres.wuorftaoixtanodllrxu:70K0zi5JJiEQwJFv@aws-1-eu-west-1.pooler.supabase.com:5432/postgres"
 )
 
-# Motor de base de datos listo para PostgreSQL en la nube
-engine = create_engine(DATABASE_URL)
+# Motor de base de datos con verificación de conexión previa (pre-ping)
+engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
@@ -28,7 +29,7 @@ def get_session():
 class Category(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str
-    type: str  # Tipo por defecto o tipo asociado al crearse
+    type: str  # Tipo asociado al crearse (ingreso / gasto)
 
 
 class Transaction(SQLModel, table=True):
@@ -36,7 +37,7 @@ class Transaction(SQLModel, table=True):
     amount: float
     description: Optional[str] = None
     category_id: int = Field(foreign_key="category.id")
-    date: datetime = Field(default_factory=datetime.utcnow)
+    date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # --- ESQUEMAS DE ENTRADA (DTOs) ---
@@ -49,7 +50,7 @@ class TransactionCreate(SQLModel):
     amount: float
     description: Optional[str] = None
     category_id: int
-    date: Optional[datetime] = None
+    date: Optional[Union[datetime, str]] = None
 
 
 # --- APLICACIÓN FASTAPI ---
@@ -65,6 +66,16 @@ app.add_middleware(
 )
 
 
+# Capturador global de errores para garantizar que los errores 500 incluyan CORS
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Error interno del servidor: {str(exc)}"},
+        headers={"Access-Control-Allow-Origin": "*"}
+    )
+
+
 @app.on_event("startup")
 def on_startup():
     create_db_and_tables()
@@ -73,15 +84,19 @@ def on_startup():
 # --- ENDPOINTS DE CATEGORÍAS ---
 @app.post("/categories/", response_model=Category)
 def create_category(category: CategoryCreate, session: Session = Depends(get_session)):
-    existing = session.exec(select(Category).where(Category.name.ilike(category.name.strip()))).first()
-    if existing:
-        return existing
+    try:
+        existing = session.exec(select(Category).where(Category.name.ilike(category.name.strip()))).first()
+        if existing:
+            return existing
 
-    db_category = Category(name=category.name.strip(), type=category.type.lower())
-    session.add(db_category)
-    session.commit()
-    session.refresh(db_category)
-    return db_category
+        db_category = Category(name=category.name.strip(), type=category.type.lower())
+        session.add(db_category)
+        session.commit()
+        session.refresh(db_category)
+        return db_category
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al crear la categoría: {str(e)}")
 
 
 @app.get("/categories/", response_model=List[Category])
@@ -96,16 +111,34 @@ def create_transaction(transaction: TransactionCreate, session: Session = Depend
     if not category:
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
     
-    db_transaction = Transaction(
-        amount=transaction.amount,
-        description=transaction.description,
-        category_id=transaction.category_id,
-        date=transaction.date if transaction.date else datetime.utcnow()
-    )
-    session.add(db_transaction)
-    session.commit()
-    session.refresh(db_transaction)
-    return db_transaction
+    # Procesamiento flexible del campo fecha
+    parsed_date = datetime.now(timezone.utc)
+    if transaction.date:
+        if isinstance(transaction.date, datetime):
+            parsed_date = transaction.date
+        elif isinstance(transaction.date, str) and transaction.date.strip():
+            try:
+                parsed_date = datetime.fromisoformat(transaction.date.replace("Z", "+00:00"))
+            except ValueError:
+                try:
+                    parsed_date = datetime.strptime(transaction.date, "%Y-%m-%d")
+                except ValueError:
+                    parsed_date = datetime.now(timezone.utc)
+
+    try:
+        db_transaction = Transaction(
+            amount=float(transaction.amount),
+            description=transaction.description,
+            category_id=transaction.category_id,
+            date=parsed_date
+        )
+        session.add(db_transaction)
+        session.commit()
+        session.refresh(db_transaction)
+        return db_transaction
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al guardar la transacción: {str(e)}")
 
 
 @app.get("/transactions/", response_model=List[Transaction])
