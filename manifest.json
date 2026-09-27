@@ -3,17 +3,17 @@
   "name": "Control de Finanzas",
   "icons": [
     {
-      "src": "/logo.png",
+      "src": "./logo.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "/logo.png",
+      "src": "./logo.png",
       "type": "image/png",
       "sizes": "512x512"
     }
   ],
-  "start_url": "/",
+  "start_url": "./index.html",
   "background_color": "#062836",
   "theme_color": "#093142",
   "display": "standalone"
