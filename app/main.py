@@ -23,8 +23,7 @@ def create_db_and_tables():
             session.exec(text('ALTER TABLE "transaction" ADD COLUMN IF NOT EXISTS type VARCHAR;'))
             session.commit()
             
-            # 2. SINCRONIZACIÓN HISTÓRICA:
-            # Hace que cada transacción tome exactamente el 'type' definido en la tabla 'category'
+            # 2. SINCRONIZACIÓN HISTÓRICA DE TIPOS
             session.exec(text('''
                 UPDATE "transaction" 
                 SET type = category.type 
@@ -72,8 +71,7 @@ class TransactionCreate(SQLModel):
 
 
 # --- RESOLUCIÓN DE TIPO ---
-def resolve_transaction_type(explicit_type: Optional[str], category: Category) -> str:
-    # 1. Si el usuario seleccionó un tipo manual en el formulario, se respeta
+def resolve_transaction_type(explicit_type: Optional[str], category: Optional[Category]) -> str:
     if explicit_type and explicit_type.strip():
         t = explicit_type.strip().lower()
         if "ingres" in t or "income" in t:
@@ -81,7 +79,6 @@ def resolve_transaction_type(explicit_type: Optional[str], category: Category) -
         if "gast" in t or "egres" in t or "expense" in t:
             return "gasto"
 
-    # 2. Si no, se hereda el tipo oficial de la categoría asignada
     if category and category.type:
         cat_type = category.type.strip().lower()
         if "ingres" in cat_type or "income" in cat_type:
@@ -157,14 +154,17 @@ def create_transaction(transaction: TransactionCreate, session: Session = Depend
                 parsed_date = datetime.fromisoformat(transaction.date.replace("Z", "+00:00"))
             except ValueError:
                 try:
-                    parsed_date = datetime.strptime(transaction.date, "%Y-%m-%d")
+                    # Si viene formato solo fecha YYYY-MM-DD, asignamos la hora actual
+                    # para mantener el orden de inserción dentro del mismo día
+                    d = datetime.strptime(transaction.date, "%Y-%m-%d")
+                    now = datetime.now(timezone.utc)
+                    parsed_date = datetime(d.year, d.month, d.day, now.hour, now.minute, now.second, tzinfo=timezone.utc)
                 except ValueError:
                     parsed_date = datetime.now(timezone.utc)
 
     if parsed_date.tzinfo is None:
         parsed_date = parsed_date.replace(tzinfo=timezone.utc)
 
-    # Determinación clara usando la relación directa con la categoría
     final_type = resolve_transaction_type(transaction.type, category)
 
     try:
@@ -194,15 +194,23 @@ def create_transaction(transaction: TransactionCreate, session: Session = Depend
 
 
 @app.get("/transactions/")
-def read_transactions(session: Session = Depends(get_session)):
-    txs = session.exec(select(Transaction).order_by(Transaction.date.desc())).all()
+def read_transactions(
+    order: str = "desc",  # "desc" = más recientes primero | "asc" = más antiguas primero
+    session: Session = Depends(get_session)
+):
+    # Criterio estricto con desempate por ID para evitar saltos
+    if order.lower() == "asc":
+        query = select(Transaction).order_by(Transaction.date.asc(), Transaction.id.asc())
+    else:
+        query = select(Transaction).order_by(Transaction.date.desc(), Transaction.id.desc())
+
+    txs = session.exec(query).all()
     cats = session.exec(select(Category)).all()
     cat_map = {c.id: c for c in cats if c.id is not None}
 
     output = []
     for tx in txs:
         cat = cat_map.get(tx.category_id)
-        # Se obtiene el tipo del registro en DB o de la categoría asociada
         tx_type = resolve_transaction_type(tx.type, cat) if cat else (tx.type or "gasto")
         output.append({
             "id": tx.id,
@@ -214,6 +222,23 @@ def read_transactions(session: Session = Depends(get_session)):
             "category_name": cat.name if cat else "Sin categoría"
         })
     return output
+
+
+@app.get("/transactions/grouped-by-month/")
+def read_transactions_grouped_by_month(
+    order: str = "desc",
+    session: Session = Depends(get_session)
+):
+    txs_response = read_transactions(order=order, session=session)
+    
+    grouped = {}
+    for tx in txs_response:
+        month_key = tx["date"].strftime("%Y-%m") if isinstance(tx["date"], datetime) else str(tx["date"])[:7]
+        if month_key not in grouped:
+            grouped[month_key] = []
+        grouped[month_key].append(tx)
+
+    return grouped
 
 
 # --- ENDPOINTS DE RESUMEN Y ESTADÍSTICAS ---
@@ -245,7 +270,7 @@ def get_balance_summary(session: Session = Depends(get_session)):
 
 @app.get("/summary/monthly-history")
 def get_monthly_history(session: Session = Depends(get_session)):
-    txs = session.exec(select(Transaction)).all()
+    txs = session.exec(select(Transaction).order_by(Transaction.date.asc(), Transaction.id.asc())).all()
     if not txs:
         return []
     
