@@ -35,107 +35,107 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 </head>
-<body class="bg-[#062836] text-white font-sans min-h-screen pb-28">
+<body class="bg-[#062836] text-white font-sans min-h-screen pb-32 text-base">
 
-    <!-- HEADER / SALDO DESTACADO (Integrado en el scroll, sin sticky) -->
+    <!-- HEADER / SALDO DESTACADO -->
     <header class="p-6 text-center bg-[#093142] border-b border-sky-900/50">
-        <p class="text-sm text-sky-200/70 font-bold uppercase tracking-wider">Saldo Total Acumulado</p>
-        <h1 id="saldo-total-destacado" class="text-4xl font-black text-cyan-pastel mt-2">0.00 €</h1>
+        <p class="text-base text-sky-200/80 font-bold uppercase tracking-wider">Saldo Total Acumulado</p>
+        <h1 id="saldo-total-destacado" class="text-5xl font-black text-cyan-pastel mt-2">0.00 €</h1>
     </header>
 
     <main class="max-w-xl mx-auto p-4 space-y-6">
 
         <!-- PESTAÑA 1: INICIO (MES ACTUAL) -->
-        <section id="tab-inicio" class="space-y-5">
+        <section id="tab-inicio" class="space-y-6">
             <!-- KPIs Mes Actual -->
-            <div class="grid grid-cols-3 gap-2.5">
-                <div class="bg-app-input p-3.5 rounded-2xl text-center border border-sky-900/40">
-                    <p class="text-xs text-sky-200/70 font-bold uppercase">Ingresos</p>
-                    <p id="kpi-ingresos-mes" class="text-base font-extrabold text-emerald-pastel mt-1">0.00 €</p>
+            <div class="grid grid-cols-3 gap-3">
+                <div class="bg-app-input p-4 rounded-2xl text-center border border-sky-900/40 shadow-sm">
+                    <p class="text-xs sm:text-sm text-sky-200/80 font-bold uppercase">Ingresos</p>
+                    <p id="kpi-ingresos-mes" class="text-lg sm:text-xl font-extrabold text-emerald-pastel mt-1">0.00 €</p>
                 </div>
-                <div class="bg-app-input p-3.5 rounded-2xl text-center border border-sky-900/40">
-                    <p class="text-xs text-sky-200/70 font-bold uppercase">Gastos</p>
-                    <p id="kpi-gastos-mes" class="text-base font-extrabold text-pink-pastel mt-1">0.00 €</p>
+                <div class="bg-app-input p-4 rounded-2xl text-center border border-sky-900/40 shadow-sm">
+                    <p class="text-xs sm:text-sm text-sky-200/80 font-bold uppercase">Gastos</p>
+                    <p id="kpi-gastos-mes" class="text-lg sm:text-xl font-extrabold text-pink-pastel mt-1">0.00 €</p>
                 </div>
-                <div class="bg-app-input p-3.5 rounded-2xl text-center border border-sky-900/40">
-                    <p class="text-xs text-sky-200/70 font-bold uppercase">Balance</p>
-                    <p id="kpi-balance-mes" class="text-base font-extrabold text-cyan-pastel mt-1">0.00 €</p>
+                <div class="bg-app-input p-4 rounded-2xl text-center border border-sky-900/40 shadow-sm">
+                    <p class="text-xs sm:text-sm text-sky-200/80 font-bold uppercase">Balance</p>
+                    <p id="kpi-balance-mes" class="text-lg sm:text-xl font-extrabold text-cyan-pastel mt-1">0.00 €</p>
                 </div>
             </div>
 
             <!-- 1. Formulario Añadir Movimiento -->
-            <form id="form-movimiento" onsubmit="guardarMovimiento(event)" class="bg-app-input p-5 rounded-2xl border border-sky-900/40 space-y-4">
-                <h3 class="text-sm font-black text-cyan-pastel uppercase tracking-wide">Nuevo Movimiento</h3>
+            <form id="form-movimiento" onsubmit="guardarMovimiento(event)" class="bg-app-input p-5 rounded-2xl border border-sky-900/40 space-y-4 shadow-md">
+                <h3 class="text-base font-black text-cyan-pastel uppercase tracking-wide">Nuevo Movimiento</h3>
                 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="text-xs text-sky-200/70 font-bold block mb-1">Fecha</label>
+                        <label class="text-sm text-sky-200/80 font-bold block mb-1">Fecha</label>
                         <input type="hidden" id="inp-fecha">
-                        <button type="button" onclick="abrirCalendario('form', 'dia')" class="w-full bg-[#062836] border border-sky-800 text-sm rounded-xl p-3 text-left font-bold text-sky-100 flex justify-between items-center">
+                        <button type="button" onclick="abrirCalendario('form', 'dia')" class="w-full bg-[#062836] border border-sky-800 text-base rounded-2xl p-3.5 text-left font-bold text-sky-100 flex justify-between items-center">
                             <span id="txt-fecha-mostrar">Seleccionar fecha</span>
-                            <span>📅</span>
+                            <span class="text-lg">📅</span>
                         </button>
                     </div>
                     <div>
-                        <label class="text-xs text-sky-200/70 font-bold block mb-1">Monto (€)</label>
-                        <input type="number" step="0.01" id="inp-monto" required placeholder="0.00" class="w-full bg-[#062836] border border-sky-800 text-sm rounded-xl p-3 font-bold text-white focus:outline-none focus:border-cyan-pastel">
+                        <label class="text-sm text-sky-200/80 font-bold block mb-1">Monto (€)</label>
+                        <input type="number" step="0.01" id="inp-monto" required placeholder="0.00" class="w-full bg-[#062836] border border-sky-800 text-base rounded-2xl p-3.5 font-bold text-white focus:outline-none focus:border-cyan-pastel">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="text-xs text-sky-200/70 font-bold block mb-1">Tipo</label>
-                        <select id="sel-tipo-mov" class="w-full bg-[#062836] border border-sky-800 text-sm rounded-xl p-3 font-bold text-white focus:outline-none">
+                        <label class="text-sm text-sky-200/80 font-bold block mb-1">Tipo</label>
+                        <select id="sel-tipo-mov" class="w-full bg-[#062836] border border-sky-800 text-base rounded-2xl p-3.5 font-bold text-white focus:outline-none">
                             <option value="gasto">Gasto</option>
                             <option value="ingreso">Ingreso</option>
                         </select>
                     </div>
                     <div>
-                        <label class="text-xs text-sky-200/70 font-bold block mb-1">Categoría</label>
-                        <select id="sel-categoria" required class="w-full bg-[#062836] border border-sky-800 text-sm rounded-xl p-3 font-bold text-white focus:outline-none"></select>
+                        <label class="text-sm text-sky-200/80 font-bold block mb-1">Categoría</label>
+                        <select id="sel-categoria" required class="w-full bg-[#062836] border border-sky-800 text-base rounded-2xl p-3.5 font-bold text-white focus:outline-none"></select>
                     </div>
                 </div>
 
                 <div>
-                    <label class="text-xs text-sky-200/70 font-bold block mb-1">Descripción</label>
-                    <input type="text" id="inp-desc" placeholder="Ej: Compra semanal" class="w-full bg-[#062836] border border-sky-800 text-sm rounded-xl p-3 font-bold text-white focus:outline-none">
+                    <label class="text-sm text-sky-200/80 font-bold block mb-1">Descripción</label>
+                    <input type="text" id="inp-desc" placeholder="Ej: Compra semanal" class="w-full bg-[#062836] border border-sky-800 text-base rounded-2xl p-3.5 font-bold text-white focus:outline-none">
                 </div>
 
-                <button type="submit" id="btn-guardar" class="w-full py-3.5 bg-pink-pastel text-sky-950 rounded-xl font-extrabold text-sm shadow-md active:scale-95 transition">Guardar Movimiento</button>
+                <button type="submit" id="btn-guardar" class="w-full py-4 bg-pink-pastel text-sky-950 rounded-2xl font-black text-base shadow-lg active:scale-95 transition">Guardar Movimiento</button>
             </form>
 
-            <!-- 2. Gestión de Categorías -->
-            <div class="bg-app-input p-5 rounded-2xl border border-sky-900/40 space-y-3.5">
-                <h3 class="text-sm font-black text-cyan-pastel uppercase tracking-wide">Categorías</h3>
-                <form onsubmit="crearNuevaCategoria(event)" class="flex gap-2">
-                    <input type="text" id="cat-emoji" placeholder="Emoji" class="w-20 bg-[#062836] border border-sky-800 text-sm rounded-xl p-3 text-center font-bold text-white">
-                    <input type="text" id="cat-nombre" placeholder="Nombre de categoría" required class="flex-1 bg-[#062836] border border-sky-800 text-sm rounded-xl p-3 font-bold text-white">
-                    <button type="submit" class="bg-emerald-pastel text-sky-950 font-bold px-4 py-3 rounded-xl text-sm">+ Añadir</button>
+            <!-- 2. Gestión de Categorías (Sin desbordamiento) -->
+            <div class="bg-app-input p-5 rounded-2xl border border-sky-900/40 space-y-4 shadow-md">
+                <h3 class="text-base font-black text-cyan-pastel uppercase tracking-wide">Categorías</h3>
+                <form onsubmit="crearNuevaCategoria(event)" class="flex items-center gap-2">
+                    <input type="text" id="cat-emoji" placeholder="Emoji" class="w-20 min-w-0 bg-[#062836] border border-sky-800 text-base rounded-2xl p-3.5 text-center font-bold text-white focus:outline-none focus:border-cyan-pastel">
+                    <input type="text" id="cat-nombre" placeholder="Nombre de categoría" required class="flex-1 min-w-0 bg-[#062836] border border-sky-800 text-base rounded-2xl p-3.5 font-bold text-white focus:outline-none focus:border-cyan-pastel">
+                    <button type="submit" class="shrink-0 bg-emerald-pastel text-sky-950 font-black px-4 py-3.5 rounded-2xl text-base shadow-md active:scale-95 transition">+ Añadir</button>
                 </form>
-                <div id="lista-tags-cat" class="flex flex-wrap gap-2 pt-1"></div>
+                <div id="lista-tags-cat" class="flex flex-wrap gap-2.5 pt-2"></div>
             </div>
 
             <!-- 3. Controles Modo Vista -->
-            <div class="flex justify-between items-center bg-[#093142] p-2 rounded-2xl border border-sky-900/50">
-                <span class="text-sm font-bold text-sky-200/70 ml-2">Movimientos del Mes</span>
-                <div class="flex space-x-1">
-                    <button id="btn-p1-notis" onclick="cambiarModoVistaP1('notis')" class="px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-xl bg-pink-pastel text-sky-950">Lista</button>
-                    <button id="btn-p1-tabla" onclick="cambiarModoVistaP1('tabla')" class="px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-xl text-sky-200/70">Tabla</button>
-                    <button id="btn-p1-graficos" onclick="cambiarModoVistaP1('graficos')" class="px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-xl text-sky-200/70">Gráfico</button>
+            <div class="flex justify-between items-center bg-[#093142] p-2.5 rounded-2xl border border-sky-900/50">
+                <span class="text-base font-bold text-sky-200/80 ml-2">Movimientos del Mes</span>
+                <div class="flex space-x-1.5">
+                    <button id="btn-p1-notis" onclick="cambiarModoVistaP1('notis')" class="px-4 py-2 text-sm sm:text-base font-black rounded-xl bg-pink-pastel text-sky-950">Lista</button>
+                    <button id="btn-p1-tabla" onclick="cambiarModoVistaP1('tabla')" class="px-4 py-2 text-sm sm:text-base font-extrabold rounded-xl text-sky-200/80">Tabla</button>
+                    <button id="btn-p1-graficos" onclick="cambiarModoVistaP1('graficos')" class="px-4 py-2 text-sm sm:text-base font-extrabold rounded-xl text-sky-200/80">Gráfico</button>
                 </div>
             </div>
 
             <!-- Vista 1: Lista Notis -->
             <div id="p1-vista-notis" class="space-y-3">
                 <div id="p1-lista-notis" class="space-y-3"></div>
-                <button id="btn-p1-ver-mas" onclick="toggleVerMasP1()" class="w-full py-2.5 text-sm font-bold text-cyan-pastel hover:underline text-center">Ver más</button>
+                <button id="btn-p1-ver-mas" onclick="toggleVerMasP1()" class="w-full py-3 text-base font-extrabold text-cyan-pastel hover:underline text-center">Ver más</button>
             </div>
 
             <!-- Vista 2: Tabla -->
             <div id="p1-vista-tabla" class="hidden bg-app-input rounded-2xl p-4 border border-sky-900/40 overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="text-xs text-sky-200/60 uppercase border-b border-sky-800/50">
+                        <tr class="text-xs sm:text-sm text-sky-200/60 uppercase border-b border-sky-800/50">
                             <th class="pb-2 px-2">Fecha</th>
                             <th class="pb-2 px-2">Tipo</th>
                             <th class="pb-2 px-2">Cat.</th>
@@ -149,7 +149,7 @@
 
             <!-- Vista 3: Gráfico -->
             <div id="p1-vista-graficos" class="hidden bg-app-input p-4 rounded-2xl border border-sky-900/40">
-                <h3 class="text-sm font-bold text-sky-200/80 mb-3 text-center">Balance Neto por Categoría (Mes Actual)</h3>
+                <h3 class="text-base font-bold text-sky-200/80 mb-3 text-center">Balance Neto por Categoría (Mes Actual)</h3>
                 <div class="h-64 relative">
                     <canvas id="chartBalanceP1"></canvas>
                 </div>
@@ -157,39 +157,39 @@
         </section>
 
         <!-- PESTAÑA 2: DETALLE POR MES -->
-        <section id="tab-mes" class="hidden space-y-5">
+        <section id="tab-mes" class="hidden space-y-6">
             <!-- Selector de Mes -->
-            <div class="flex justify-between items-center bg-app-input p-4 rounded-2xl border border-sky-900/40">
-                <span class="text-sm font-bold text-sky-200/70">Mes seleccionado:</span>
-                <button type="button" onclick="abrirCalendario('mes-filtro', 'mes')" class="bg-[#062836] border border-sky-800 text-sm font-extrabold text-pink-pastel px-3.5 py-2 rounded-xl flex items-center gap-2">
+            <div class="flex justify-between items-center bg-app-input p-4 rounded-2xl border border-sky-900/40 shadow-sm">
+                <span class="text-base font-bold text-sky-200/80">Mes seleccionado:</span>
+                <button type="button" onclick="abrirCalendario('mes-filtro', 'mes')" class="bg-[#062836] border border-sky-800 text-base font-extrabold text-pink-pastel px-4 py-2.5 rounded-2xl flex items-center gap-2">
                     <span id="btn-sel-mes-text">Seleccionar Mes</span>
-                    <span>🗓️</span>
+                    <span class="text-lg">🗓️</span>
                 </button>
             </div>
 
             <!-- KPIs Mes Filtro -->
-            <div class="grid grid-cols-3 gap-2.5">
-                <div class="bg-app-input p-3.5 rounded-2xl text-center border border-sky-900/40">
-                    <p class="text-xs text-sky-200/70 font-bold uppercase">Ingresos</p>
-                    <p id="p2-mes-ingresos" class="text-base font-extrabold text-emerald-pastel mt-1">0.00 €</p>
+            <div class="grid grid-cols-3 gap-3">
+                <div class="bg-app-input p-4 rounded-2xl text-center border border-sky-900/40 shadow-sm">
+                    <p class="text-xs sm:text-sm text-sky-200/80 font-bold uppercase">Ingresos</p>
+                    <p id="p2-mes-ingresos" class="text-lg sm:text-xl font-extrabold text-emerald-pastel mt-1">0.00 €</p>
                 </div>
-                <div class="bg-app-input p-3.5 rounded-2xl text-center border border-sky-900/40">
-                    <p class="text-xs text-sky-200/70 font-bold uppercase">Gastos</p>
-                    <p id="p2-mes-gastos" class="text-base font-extrabold text-pink-pastel mt-1">0.00 €</p>
+                <div class="bg-app-input p-4 rounded-2xl text-center border border-sky-900/40 shadow-sm">
+                    <p class="text-xs sm:text-sm text-sky-200/80 font-bold uppercase">Gastos</p>
+                    <p id="p2-mes-gastos" class="text-lg sm:text-xl font-extrabold text-pink-pastel mt-1">0.00 €</p>
                 </div>
-                <div class="bg-app-input p-3.5 rounded-2xl text-center border border-sky-900/40">
-                    <p class="text-xs text-sky-200/70 font-bold uppercase">Balance</p>
-                    <p id="p2-mes-balance" class="text-base font-extrabold text-cyan-pastel mt-1">0.00 €</p>
+                <div class="bg-app-input p-4 rounded-2xl text-center border border-sky-900/40 shadow-sm">
+                    <p class="text-xs sm:text-sm text-sky-200/80 font-bold uppercase">Balance</p>
+                    <p id="p2-mes-balance" class="text-lg sm:text-xl font-extrabold text-cyan-pastel mt-1">0.00 €</p>
                 </div>
             </div>
 
             <!-- Botones Vista P2 -->
-            <div class="flex justify-between items-center bg-[#093142] p-2 rounded-2xl border border-sky-900/50">
-                <span class="text-sm font-bold text-sky-200/70 ml-2">Detalles del Mes</span>
-                <div class="flex space-x-1">
-                    <button id="btn-p2-notis" onclick="cambiarModoVistaP2('notis')" class="px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-xl bg-pink-pastel text-sky-950">Lista</button>
-                    <button id="btn-p2-tabla" onclick="cambiarModoVistaP2('tabla')" class="px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-xl text-sky-200/70">Tabla</button>
-                    <button id="btn-p2-graficos" onclick="cambiarModoVistaP2('graficos')" class="px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-xl text-sky-200/70">Gráficos</button>
+            <div class="flex justify-between items-center bg-[#093142] p-2.5 rounded-2xl border border-sky-900/50">
+                <span class="text-base font-bold text-sky-200/80 ml-2">Detalles del Mes</span>
+                <div class="flex space-x-1.5">
+                    <button id="btn-p2-notis" onclick="cambiarModoVistaP2('notis')" class="px-4 py-2 text-sm sm:text-base font-black rounded-xl bg-pink-pastel text-sky-950">Lista</button>
+                    <button id="btn-p2-tabla" onclick="cambiarModoVistaP2('tabla')" class="px-4 py-2 text-sm sm:text-base font-extrabold rounded-xl text-sky-200/80">Tabla</button>
+                    <button id="btn-p2-graficos" onclick="cambiarModoVistaP2('graficos')" class="px-4 py-2 text-sm sm:text-base font-extrabold rounded-xl text-sky-200/80">Gráficos</button>
                 </div>
             </div>
 
@@ -202,7 +202,7 @@
             <div id="p2-vista-tabla" class="hidden bg-app-input rounded-2xl p-4 border border-sky-900/40 overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="text-xs text-sky-200/60 uppercase border-b border-sky-800/50">
+                        <tr class="text-xs sm:text-sm text-sky-200/60 uppercase border-b border-sky-800/50">
                             <th class="pb-2 px-2">Fecha</th>
                             <th class="pb-2 px-2">Tipo</th>
                             <th class="pb-2 px-2">Cat.</th>
@@ -215,21 +215,21 @@
             </div>
 
             <!-- P2 Vista Gráficos -->
-            <div id="p2-vista-graficos" class="hidden space-y-4">
+            <div id="p2-vista-graficos" class="hidden space-y-5">
                 <div class="bg-app-input p-4 rounded-2xl border border-sky-900/40">
-                    <h3 class="text-sm font-bold text-sky-200/80 mb-3 text-center">Balance Neto por Categoría (Mes Seleccionado)</h3>
+                    <h3 class="text-base font-bold text-sky-200/80 mb-3 text-center">Balance Neto por Categoría (Mes Seleccionado)</h3>
                     <div class="h-64 relative">
                         <canvas id="chartRoscoP2"></canvas>
                     </div>
                 </div>
                 <div class="bg-app-input p-4 rounded-2xl border border-sky-900/40">
-                    <h3 class="text-sm font-bold text-sky-200/80 mb-3 text-center">Gastos por Categoría</h3>
+                    <h3 class="text-base font-bold text-sky-200/80 mb-3 text-center">Gastos por Categoría</h3>
                     <div class="h-56 relative">
                         <canvas id="chartGastosP2"></canvas>
                     </div>
                 </div>
                 <div class="bg-app-input p-4 rounded-2xl border border-sky-900/40">
-                    <h3 class="text-sm font-bold text-sky-200/80 mb-3 text-center">Ingresos por Categoría</h3>
+                    <h3 class="text-base font-bold text-sky-200/80 mb-3 text-center">Ingresos por Categoría</h3>
                     <div class="h-56 relative">
                         <canvas id="chartIngresosP2"></canvas>
                     </div>
@@ -238,29 +238,29 @@
         </section>
 
         <!-- PESTAÑA 3: HISTÓRICO GLOBAL -->
-        <section id="tab-historico" class="hidden space-y-5">
+        <section id="tab-historico" class="hidden space-y-6">
             <div class="grid grid-cols-2 gap-3">
-                <div class="bg-app-input p-4 rounded-2xl border border-sky-900/40">
-                    <p class="text-xs text-sky-200/70 font-bold uppercase">Total Ingresos</p>
-                    <p id="p3-suma-ingresos" class="text-lg font-extrabold text-emerald-pastel mt-1">0.00 €</p>
+                <div class="bg-app-input p-4 rounded-2xl border border-sky-900/40 shadow-sm">
+                    <p class="text-xs sm:text-sm text-sky-200/80 font-bold uppercase">Total Ingresos</p>
+                    <p id="p3-suma-ingresos" class="text-xl font-extrabold text-emerald-pastel mt-1">0.00 €</p>
                 </div>
-                <div class="bg-app-input p-4 rounded-2xl border border-sky-900/40">
-                    <p class="text-xs text-sky-200/70 font-bold uppercase">Total Gastos</p>
-                    <p id="p3-suma-gastos" class="text-lg font-extrabold text-pink-pastel mt-1">0.00 €</p>
+                <div class="bg-app-input p-4 rounded-2xl border border-sky-900/40 shadow-sm">
+                    <p class="text-xs sm:text-sm text-sky-200/80 font-bold uppercase">Total Gastos</p>
+                    <p id="p3-suma-gastos" class="text-xl font-extrabold text-pink-pastel mt-1">0.00 €</p>
                 </div>
-                <div class="bg-app-input p-4 rounded-2xl border border-sky-900/40">
-                    <p class="text-xs text-sky-200/70 font-bold uppercase">Balance Global</p>
-                    <p id="p3-balance-global" class="text-lg font-extrabold text-cyan-pastel mt-1">0.00 €</p>
+                <div class="bg-app-input p-4 rounded-2xl border border-sky-900/40 shadow-sm">
+                    <p class="text-xs sm:text-sm text-sky-200/80 font-bold uppercase">Balance Global</p>
+                    <p id="p3-balance-global" class="text-xl font-extrabold text-cyan-pastel mt-1">0.00 €</p>
                 </div>
-                <div class="bg-app-input p-4 rounded-2xl border border-sky-900/40">
-                    <p class="text-xs text-sky-200/70 font-bold uppercase">Saldo Actual</p>
-                    <p id="p3-saldo-actual" class="text-lg font-extrabold text-white mt-1">0.00 €</p>
+                <div class="bg-app-input p-4 rounded-2xl border border-sky-900/40 shadow-sm">
+                    <p class="text-xs sm:text-sm text-sky-200/80 font-bold uppercase">Saldo Actual</p>
+                    <p id="p3-saldo-actual" class="text-xl font-extrabold text-white mt-1">0.00 €</p>
                 </div>
             </div>
 
             <!-- Gráfico Balance por Categorías (Todas) -->
             <div class="bg-app-input p-4 rounded-2xl border border-sky-900/40">
-                <h3 class="text-sm font-bold text-sky-200/80 mb-3 text-center">Balance Histórico por Categoría</h3>
+                <h3 class="text-base font-bold text-sky-200/80 mb-3 text-center">Balance Histórico por Categoría</h3>
                 <div class="h-64 relative">
                     <canvas id="chartBalanceHistoricoCat"></canvas>
                 </div>
@@ -268,7 +268,7 @@
 
             <!-- Gráfico Evolución Mensual -->
             <div class="bg-app-input p-4 rounded-2xl border border-sky-900/40">
-                <h3 class="text-sm font-bold text-sky-200/80 mb-3 text-center">Evolución Mensual (Ingresos vs Gastos)</h3>
+                <h3 class="text-base font-bold text-sky-200/80 mb-3 text-center">Evolución Mensual (Ingresos vs Gastos)</h3>
                 <div class="h-64 relative">
                     <canvas id="chartHistoricoBarra"></canvas>
                 </div>
@@ -278,45 +278,45 @@
     </main>
 
     <!-- MODAL CALENDARIO -->
-    <div id="modal-calendar" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div id="modal-calendar" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-[#093142] border border-sky-800 rounded-3xl p-6 w-full max-w-sm space-y-4 shadow-2xl">
             <div class="flex justify-between items-center">
-                <button onclick="calMesAnterior()" class="p-3 text-cyan-pastel font-black hover:bg-sky-900/50 rounded-xl text-lg">◀</button>
+                <button onclick="calMesAnterior()" class="p-3 text-cyan-pastel font-black hover:bg-sky-900/50 rounded-2xl text-xl">◀</button>
                 <div class="text-center">
-                    <span id="cal-titulo-mes" class="font-extrabold text-base text-white"></span>
-                    <span id="cal-titulo-anio" class="font-bold text-sm text-sky-200/60 ml-1"></span>
+                    <span id="cal-titulo-mes" class="font-black text-lg text-white"></span>
+                    <span id="cal-titulo-anio" class="font-bold text-base text-sky-200/70 ml-1"></span>
                 </div>
-                <button onclick="calMesSiguiente()" class="p-3 text-cyan-pastel font-black hover:bg-sky-900/50 rounded-xl text-lg">▶</button>
+                <button onclick="calMesSiguiente()" class="p-3 text-cyan-pastel font-black hover:bg-sky-900/50 rounded-2xl text-xl">▶</button>
             </div>
 
             <!-- Vista Días -->
             <div id="cal-vista-dias">
-                <div class="grid grid-cols-7 text-center text-xs font-bold text-sky-200/50 mb-2">
+                <div class="grid grid-cols-7 text-center text-sm font-bold text-sky-200/60 mb-2">
                     <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
                 </div>
-                <div id="cal-grid-dias" class="grid grid-cols-7 text-center gap-1"></div>
+                <div id="cal-grid-dias" class="grid grid-cols-7 text-center gap-1.5"></div>
             </div>
 
             <!-- Vista Meses -->
-            <div id="cal-vista-meses" class="hidden grid grid-cols-3 gap-2"></div>
+            <div id="cal-vista-meses" class="hidden grid grid-cols-3 gap-2.5"></div>
 
-            <button onclick="cerrarCalendario()" class="w-full py-3 bg-app-input text-sky-200 text-sm font-bold rounded-xl border border-sky-800">Cancelar</button>
+            <button onclick="cerrarCalendario()" class="w-full py-3.5 bg-app-input text-sky-200 text-base font-extrabold rounded-2xl border border-sky-800">Cancelar</button>
         </div>
     </div>
 
     <!-- NAVBAR INFERIOR -->
-    <nav class="fixed bottom-0 inset-x-0 bg-[#093142] border-t border-sky-900/60 p-3.5 flex justify-around items-center z-20">
+    <nav class="fixed bottom-0 inset-x-0 bg-[#093142] border-t border-sky-900/60 p-4 flex justify-around items-center z-20 shadow-2xl">
         <button id="nav-inicio" onclick="cambiarPestana('inicio')" class="flex flex-col items-center text-pink-pastel">
-            <span class="text-2xl">🏠</span>
-            <span class="text-xs font-bold mt-1">Inicio</span>
+            <span class="text-3xl">🏠</span>
+            <span class="text-sm font-extrabold mt-1">Inicio</span>
         </button>
         <button id="nav-mes" onclick="cambiarPestana('mes')" class="flex flex-col items-center text-sky-200/50">
-            <span class="text-2xl">📅</span>
-            <span class="text-xs font-bold mt-1">Mes</span>
+            <span class="text-3xl">📅</span>
+            <span class="text-sm font-extrabold mt-1">Mes</span>
         </button>
         <button id="nav-historico" onclick="cambiarPestana('historico')" class="flex flex-col items-center text-sky-200/50">
-            <span class="text-2xl">📊</span>
-            <span class="text-xs font-bold mt-1">Histórico</span>
+            <span class="text-3xl">📊</span>
+            <span class="text-sm font-extrabold mt-1">Histórico</span>
         </button>
     </nav>
 
@@ -439,10 +439,10 @@
         function cambiarModoVistaP1(v) {
             ['notis', 'tabla', 'graficos'].forEach(m => {
                 document.getElementById(`p1-vista-${m}`).classList.add('hidden');
-                document.getElementById(`btn-p1-${m}`).className = 'px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-xl text-sky-200/70';
+                document.getElementById(`btn-p1-${m}`).className = 'px-4 py-2 text-sm sm:text-base font-extrabold rounded-xl text-sky-200/80';
             });
             document.getElementById(`p1-vista-${v}`).classList.remove('hidden');
-            document.getElementById(`btn-p1-${v}`).className = 'px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-xl bg-pink-pastel text-sky-950';
+            document.getElementById(`btn-p1-${v}`).className = 'px-4 py-2 text-sm sm:text-base font-black rounded-xl bg-pink-pastel text-sky-950';
 
             if (v === 'graficos') renderGraficoP1BalanceNeto();
         }
@@ -450,10 +450,10 @@
         function cambiarModoVistaP2(v) {
             ['notis', 'tabla', 'graficos'].forEach(m => {
                 document.getElementById(`p2-vista-${m}`).classList.add('hidden');
-                document.getElementById(`btn-p2-${m}`).className = 'px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-xl text-sky-200/70';
+                document.getElementById(`btn-p2-${m}`).className = 'px-4 py-2 text-sm sm:text-base font-extrabold rounded-xl text-sky-200/80';
             });
             document.getElementById(`p2-vista-${v}`).classList.remove('hidden');
-            document.getElementById(`btn-p2-${v}`).className = 'px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-xl bg-pink-pastel text-sky-950';
+            document.getElementById(`btn-p2-${v}`).className = 'px-4 py-2 text-sm sm:text-base font-black rounded-xl bg-pink-pastel text-sky-950';
 
             if (v === 'graficos') renderGraficosP2();
         }
@@ -486,11 +486,12 @@
                     
                     select.innerHTML += `<option value="${cat.name}">${emoji} ${nombreLimpio}</option>`;
                     
+                    // Etiqueta con recuadro interior explícito en la cruz de borrado
                     const tag = document.createElement('div');
-                    tag.className = "text-xs px-3.5 py-2 rounded-2xl bg-app-input border border-app-input text-sky-100 font-bold flex items-center gap-2";
+                    tag.className = "text-sm px-3.5 py-2 rounded-2xl bg-[#062836] border border-sky-700/80 text-sky-100 font-bold flex items-center gap-2.5 shadow-sm";
                     tag.innerHTML = `
-                        <span>${emoji} ${nombreLimpio}</span>
-                        <button onclick="eliminarCategoria('${cat.id}', '${nombreLimpio}')" class="text-pink-pastel hover:text-red-400 font-black ml-1 text-sm transition">✕</button>
+                        <span class="text-base">${emoji} ${nombreLimpio}</span>
+                        <button type="button" onclick="eliminarCategoria('${cat.id}', '${nombreLimpio}')" class="flex items-center justify-center w-6 h-6 rounded-md bg-pink-500/20 border border-pink-400/50 text-pink-200 hover:bg-pink-500/40 text-xs font-black transition shrink-0">✕</button>
                     `;
                     tagBox.appendChild(tag);
                 });
@@ -538,7 +539,7 @@
             cont.innerHTML = '';
 
             if (txs.length === 0) {
-                cont.innerHTML = '<p class="text-sm text-sky-200/60 italic text-center py-4">Sin movimientos en este mes actual.</p>';
+                cont.innerHTML = '<p class="text-base text-sky-200/60 italic text-center py-4">Sin movimientos en este mes actual.</p>';
                 return;
             }
 
@@ -551,22 +552,22 @@
                 const nombreLimpio = obtenerNombreLimpio(catObj.name);
 
                 const card = document.createElement('div');
-                card.className = "bg-app-input border border-app-input p-4 rounded-2xl shadow-sm flex items-center justify-between";
+                card.className = "bg-app-input border border-sky-900/40 p-4 rounded-2xl shadow-sm flex items-center justify-between";
                 card.innerHTML = `
                     <div class="flex items-center space-x-3.5">
-                        <div class="w-12 h-12 rounded-2xl ${esIngreso ? 'bg-emerald-pastel-subtle text-emerald-pastel' : 'bg-pink-pastel-subtle text-pink-pastel'} flex items-center justify-center font-bold text-xl">
+                        <div class="w-12 h-12 rounded-2xl ${esIngreso ? 'bg-emerald-pastel-subtle text-emerald-pastel' : 'bg-pink-pastel-subtle text-pink-pastel'} flex items-center justify-center font-bold text-2xl">
                             ${emoji}
                         </div>
                         <div>
-                            <p class="text-sm font-bold text-white">${tx.description || nombreLimpio}</p>
-                            <div class="flex items-center gap-1.5 text-xs text-sky-200/70 mt-0.5 font-semibold">
+                            <p class="text-base font-bold text-white">${tx.description || nombreLimpio}</p>
+                            <div class="flex items-center gap-1.5 text-sm text-sky-200/70 mt-0.5 font-semibold">
                                 <span>${nombreLimpio}</span>
                                 <span>•</span>
                                 <span>${new Date(tx.date).toLocaleDateString('es-ES')}</span>
                             </div>
                         </div>
                     </div>
-                    <span class="font-extrabold text-base ${esIngreso ? 'text-emerald-pastel' : 'text-pink-pastel'}">
+                    <span class="font-extrabold text-lg ${esIngreso ? 'text-emerald-pastel' : 'text-pink-pastel'}">
                         ${esIngreso ? '+' : '-'}${Number(tx.amount).toFixed(2)} €
                     </span>
                 `;
@@ -595,11 +596,11 @@
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td class="py-3 px-2 text-sky-200/70 text-sm font-semibold">${new Date(tx.date).toLocaleDateString('es-ES')}</td>
-                    <td class="py-3 px-2"><span class="text-xs uppercase font-bold px-2 py-0.5 rounded-full ${esIngreso ? 'bg-emerald-pastel-subtle text-emerald-pastel' : 'bg-pink-pastel-subtle text-pink-pastel'}">${esIngreso ? 'Ingreso' : 'Gasto'}</span></td>
-                    <td class="py-3 px-2 font-bold text-sky-100 text-sm">${emoji} ${nombreLimpio}</td>
-                    <td class="py-3 px-2 text-sky-200/80 text-sm">${tx.description || '-'}</td>
-                    <td class="py-3 px-2 text-right font-extrabold text-sm ${esIngreso ? 'text-emerald-pastel' : 'text-pink-pastel'}">${esIngreso ? '+' : '-'}${Number(tx.amount).toFixed(2)} €</td>
+                    <td class="py-3 px-2 text-sky-200/80 text-sm sm:text-base font-semibold">${new Date(tx.date).toLocaleDateString('es-ES')}</td>
+                    <td class="py-3 px-2"><span class="text-xs sm:text-sm uppercase font-bold px-2.5 py-1 rounded-full ${esIngreso ? 'bg-emerald-pastel-subtle text-emerald-pastel' : 'bg-pink-pastel-subtle text-pink-pastel'}">${esIngreso ? 'Ingreso' : 'Gasto'}</span></td>
+                    <td class="py-3 px-2 font-bold text-sky-100 text-sm sm:text-base">${emoji} ${nombreLimpio}</td>
+                    <td class="py-3 px-2 text-sky-200/80 text-sm sm:text-base">${tx.description || '-'}</td>
+                    <td class="py-3 px-2 text-right font-extrabold text-sm sm:text-base ${esIngreso ? 'text-emerald-pastel' : 'text-pink-pastel'}">${esIngreso ? '+' : '-'}${Number(tx.amount).toFixed(2)} €</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -648,7 +649,7 @@
                             anchor: (ctx) => ctx.dataset.data[ctx.dataIndex] < 0 ? 'start' : 'end',
                             align: (ctx) => ctx.dataset.data[ctx.dataIndex] < 0 ? 'bottom' : 'top',
                             offset: 4,
-                            font: { family: 'Nunito', size: 12, weight: 'bold' },
+                            font: { family: 'Nunito', size: 13, weight: 'bold' },
                             formatter: (val) => (val >= 0 ? '+' : '') + val.toFixed(2) + ' €'
                         }
                     },
@@ -674,7 +675,7 @@
             tbody.innerHTML = '';
 
             if (txsMes.length === 0) {
-                contNotis.innerHTML = '<p class="text-sm text-sky-200/60 italic text-center py-4">Sin movimientos en el mes seleccionado.</p>';
+                contNotis.innerHTML = '<p class="text-base text-sky-200/60 italic text-center py-4">Sin movimientos en el mes seleccionado.</p>';
             }
 
             txsMes.forEach(tx => {
@@ -687,25 +688,25 @@
                 else exp += Number(tx.amount);
 
                 contNotis.innerHTML += `
-                    <div class="bg-app-input border border-app-input p-4 rounded-2xl flex justify-between items-center text-sm">
-                        <div class="flex items-center space-x-3">
-                            <span class="text-xl">${emoji}</span>
+                    <div class="bg-app-input border border-sky-900/40 p-4 rounded-2xl flex justify-between items-center">
+                        <div class="flex items-center space-x-3.5">
+                            <span class="text-2xl">${emoji}</span>
                             <div>
-                                <p class="font-bold text-white text-sm">${tx.description || nombreLimpio}</p>
-                                <span class="text-xs text-sky-200/70 font-semibold">${nombreLimpio} • ${new Date(tx.date).toLocaleDateString('es-ES')}</span>
+                                <p class="font-bold text-white text-base">${tx.description || nombreLimpio}</p>
+                                <span class="text-sm text-sky-200/70 font-semibold">${nombreLimpio} • ${new Date(tx.date).toLocaleDateString('es-ES')}</span>
                             </div>
                         </div>
-                        <span class="font-extrabold text-base ${esIngreso ? 'text-emerald-pastel' : 'text-pink-pastel'}">${esIngreso ? '+' : '-'}${Number(tx.amount).toFixed(2)} €</span>
+                        <span class="font-extrabold text-lg ${esIngreso ? 'text-emerald-pastel' : 'text-pink-pastel'}">${esIngreso ? '+' : '-'}${Number(tx.amount).toFixed(2)} €</span>
                     </div>
                 `;
 
                 tbody.innerHTML += `
                     <tr>
-                        <td class="py-3 px-2 text-sky-200/70 text-sm font-semibold">${new Date(tx.date).toLocaleDateString('es-ES')}</td>
-                        <td class="py-3 px-2"><span class="text-xs uppercase font-bold px-2 py-0.5 rounded-full ${esIngreso ? 'bg-emerald-pastel-subtle text-emerald-pastel' : 'bg-pink-pastel-subtle text-pink-pastel'}">${esIngreso ? 'Ingreso' : 'Gasto'}</span></td>
-                        <td class="py-3 px-2 font-bold text-sky-100 text-sm">${emoji} ${nombreLimpio}</td>
-                        <td class="py-3 px-2 text-sky-200/80 text-sm">${tx.description || '-'}</td>
-                        <td class="py-3 px-2 text-right font-extrabold text-sm ${esIngreso ? 'text-emerald-pastel' : 'text-pink-pastel'}">${esIngreso ? '+' : '-'}${Number(tx.amount).toFixed(2)} €</td>
+                        <td class="py-3 px-2 text-sky-200/80 text-sm sm:text-base font-semibold">${new Date(tx.date).toLocaleDateString('es-ES')}</td>
+                        <td class="py-3 px-2"><span class="text-xs sm:text-sm uppercase font-bold px-2.5 py-1 rounded-full ${esIngreso ? 'bg-emerald-pastel-subtle text-emerald-pastel' : 'bg-pink-pastel-subtle text-pink-pastel'}">${esIngreso ? 'Ingreso' : 'Gasto'}</span></td>
+                        <td class="py-3 px-2 font-bold text-sky-100 text-sm sm:text-base">${emoji} ${nombreLimpio}</td>
+                        <td class="py-3 px-2 text-sky-200/80 text-sm sm:text-base">${tx.description || '-'}</td>
+                        <td class="py-3 px-2 text-right font-extrabold text-sm sm:text-base ${esIngreso ? 'text-emerald-pastel' : 'text-pink-pastel'}">${esIngreso ? '+' : '-'}${Number(tx.amount).toFixed(2)} €</td>
                     </tr>
                 `;
             });
@@ -760,7 +761,7 @@
                             anchor: (ctx) => ctx.dataset.data[ctx.dataIndex] < 0 ? 'start' : 'end',
                             align: (ctx) => ctx.dataset.data[ctx.dataIndex] < 0 ? 'bottom' : 'top',
                             offset: 4,
-                            font: { family: 'Nunito', size: 12, weight: 'bold' },
+                            font: { family: 'Nunito', size: 13, weight: 'bold' },
                             formatter: (val) => (val >= 0 ? '+' : '') + val.toFixed(2) + ' €'
                         }
                     },
@@ -800,7 +801,7 @@
                             anchor: 'end',
                             align: 'top',
                             offset: 4,
-                            font: { family: 'Nunito', size: 12, weight: 'bold' },
+                            font: { family: 'Nunito', size: 13, weight: 'bold' },
                             formatter: v => `-${v.toFixed(2)}€`
                         }
                     },
@@ -837,7 +838,7 @@
                             anchor: 'end',
                             align: 'top',
                             offset: 4,
-                            font: { family: 'Nunito', size: 12, weight: 'bold' },
+                            font: { family: 'Nunito', size: 13, weight: 'bold' },
                             formatter: v => `+${v.toFixed(2)}€`
                         }
                     },
@@ -913,7 +914,7 @@
                             anchor: (ctx) => ctx.dataset.data[ctx.dataIndex] < 0 ? 'start' : 'end',
                             align: (ctx) => ctx.dataset.data[ctx.dataIndex] < 0 ? 'bottom' : 'top',
                             offset: 4,
-                            font: { family: 'Nunito', size: 12, weight: 'bold' },
+                            font: { family: 'Nunito', size: 13, weight: 'bold' },
                             formatter: (val) => (val >= 0 ? '+' : '') + val.toFixed(2) + ' €'
                         }
                     },
@@ -963,9 +964,7 @@
                             padding: { top: 25 }
                         },
                         plugins: {
-                            legend: {
-                                display: false
-                            },
+                            legend: { display: false },
                             datalabels: {
                                 display: true,
                                 color: '#ffffff',
@@ -1064,7 +1063,7 @@
             for (let i = diaSemanaInicio - 1; i >= 0; i--) {
                 const num = diasMesAnterior - i;
                 const d = document.createElement('div');
-                d.className = "py-2 text-sky-200/20 font-normal select-none";
+                d.className = "py-2.5 text-sky-200/20 font-normal select-none text-base";
                 d.innerText = num;
                 grid.appendChild(d);
             }
@@ -1077,9 +1076,9 @@
 
                 const btn = document.createElement('button');
                 btn.type = "button";
-                btn.className = `py-2.5 rounded-2xl font-extrabold transition text-base ${
+                btn.className = `py-2.5 rounded-2xl font-black transition text-base ${
                     esSeleccionado 
-                    ? 'bg-[#ffcdd4] text-[#062836] font-black shadow-lg scale-105' 
+                    ? 'bg-[#ffcdd4] text-[#062836] shadow-lg scale-105' 
                     : 'text-white hover:bg-sky-900/50 hover:text-cyan-pastel'
                 }`;
                 btn.innerText = day;
@@ -1091,7 +1090,7 @@
             const rest = (celdas % 7 === 0) ? 0 : 7 - (celdas % 7);
             for (let j = 1; j <= rest; j++) {
                 const d = document.createElement('div');
-                d.className = "py-2 text-sky-200/20 font-normal select-none";
+                d.className = "py-2.5 text-sky-200/20 font-normal select-none text-base";
                 d.innerText = j;
                 grid.appendChild(d);
             }
@@ -1107,7 +1106,7 @@
 
                 const btn = document.createElement('button');
                 btn.type = "button";
-                btn.className = `py-3.5 rounded-2xl text-sm font-black transition ${
+                btn.className = `py-4 rounded-2xl text-base font-black transition ${
                     esSeleccionado 
                     ? 'bg-[#ffcdd4] text-[#062836] shadow-md scale-105' 
                     : 'bg-app-input border border-app-input text-white hover:bg-sky-900/40'
