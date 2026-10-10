@@ -9,7 +9,7 @@ from sqlmodel import SQLModel, Field, Session, create_engine, select, text
 # --- CONEXIÓN A BASE DE DATOS EN LA NUBE (SUPABASE / RENDER) ---
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://postgres.wuorftaoixtanodllrxu:70K0zi5JJiEQwJFv@aws-1-eu-west-1.pooler.supabase.com:5432/postgres"
+    "postgresql+psycopg2://postgres.wuorftaoixtanodllrxu:70K0zi5JJiEQwJFv@aws-1-eu-west-1.pooler.supabase.com:5432/postgres"
 )
 
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
