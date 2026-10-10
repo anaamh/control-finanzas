@@ -19,17 +19,8 @@ def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
     with Session(engine) as session:
         try:
-            # 1. Asegurar columna 'type' en 'transaction'
+            # Solo asegura que la columna 'type' exista sin alterar los datos guardados
             session.exec(text('ALTER TABLE "transaction" ADD COLUMN IF NOT EXISTS type VARCHAR;'))
-            session.commit()
-            
-            # 2. SINCRONIZACIÓN HISTÓRICA DE TIPOS
-            session.exec(text('''
-                UPDATE "transaction" 
-                SET type = category.type 
-                FROM category 
-                WHERE "transaction".category_id = category.id;
-            '''))
             session.commit()
         except Exception:
             session.rollback()
@@ -154,8 +145,6 @@ def create_transaction(transaction: TransactionCreate, session: Session = Depend
                 parsed_date = datetime.fromisoformat(transaction.date.replace("Z", "+00:00"))
             except ValueError:
                 try:
-                    # Si viene formato solo fecha YYYY-MM-DD, asignamos la hora actual
-                    # para mantener el orden de inserción dentro del mismo día
                     d = datetime.strptime(transaction.date, "%Y-%m-%d")
                     now = datetime.now(timezone.utc)
                     parsed_date = datetime(d.year, d.month, d.day, now.hour, now.minute, now.second, tzinfo=timezone.utc)
@@ -195,10 +184,9 @@ def create_transaction(transaction: TransactionCreate, session: Session = Depend
 
 @app.get("/transactions/")
 def read_transactions(
-    order: str = "desc",  # "desc" = más recientes primero | "asc" = más antiguas primero
+    order: str = "desc",
     session: Session = Depends(get_session)
 ):
-    # Criterio estricto con desempate por ID para evitar saltos
     if order.lower() == "asc":
         query = select(Transaction).order_by(Transaction.date.asc(), Transaction.id.asc())
     else:
@@ -211,7 +199,11 @@ def read_transactions(
     output = []
     for tx in txs:
         cat = cat_map.get(tx.category_id)
-        tx_type = resolve_transaction_type(tx.type, cat) if cat else (tx.type or "gasto")
+        if tx.type and tx.type.lower().strip() in ['ingreso', 'gasto']:
+            tx_type = tx.type.lower().strip()
+        else:
+            tx_type = resolve_transaction_type(tx.type, cat)
+
         output.append({
             "id": tx.id,
             "amount": tx.amount,
@@ -254,7 +246,10 @@ def get_balance_summary(session: Session = Depends(get_session)):
     for tx in txs:
         cat = cat_map.get(tx.category_id)
         amt = abs(tx.amount)
-        tx_type = resolve_transaction_type(tx.type, cat) if cat else (tx.type or "gasto")
+        if tx.type and tx.type.lower().strip() in ['ingreso', 'gasto']:
+            tx_type = tx.type.lower().strip()
+        else:
+            tx_type = resolve_transaction_type(tx.type, cat)
         
         if tx_type == "ingreso":
             total_income += amt
@@ -285,7 +280,10 @@ def get_monthly_history(session: Session = Depends(get_session)):
         
         cat = cat_map.get(tx.category_id)
         amt = abs(tx.amount)
-        tx_type = resolve_transaction_type(tx.type, cat) if cat else (tx.type or "gasto")
+        if tx.type and tx.type.lower().strip() in ['ingreso', 'gasto']:
+            tx_type = tx.type.lower().strip()
+        else:
+            tx_type = resolve_transaction_type(tx.type, cat)
         
         if tx_type == "ingreso":
             monthly_data[period]["income"] += amt
